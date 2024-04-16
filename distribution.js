@@ -43,6 +43,14 @@ const distribution = {
 };
 
 global.distribution = distribution;
+// UNCOMMENT THESE 4 LINES FOR RUNNING ALL.STUDENT.TEST
+// global.distribution.convert = require('html-to-text').convert;
+// global.distribution.fs = require('fs');
+// global.distribution.path = require('path');
+// global.distribution.testFilesPath = '/usr/src/app/m5/testFiles';
+
+// global.distribution.jsdom = require('jsdom').JSDOM;
+// global.distribution.url = require('url').URL;
 
 distribution['all'] = {};
 distribution['all'].status =

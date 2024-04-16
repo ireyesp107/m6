@@ -128,20 +128,22 @@ test('(25 pts) all.mr:ncdc', (done) => {
   const doMapReduce = (cb) => {
     distribution.ncdc.store.get(null, (e, v) => {
       try {
+        console.log(v);
         expect(v.length).toBe(dataset.length);
       } catch (e) {
         done(e);
       }
 
 
-      distribution.ncdc.mr.exec({keys: v, map: m1, reduce: r1}, (e, v) => {
-        try {
-          expect(v).toEqual(expect.arrayContaining(expected));
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
+      distribution.ncdc.mr.exec(
+          {keys: v, map: m1, reduce: r1}, (e, v) => {
+            try {
+              expect(v).toEqual(expect.arrayContaining(expected));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
     });
   };
 
@@ -152,6 +154,9 @@ test('(25 pts) all.mr:ncdc', (done) => {
     let key = Object.keys(o)[0];
     let value = o[key];
     distribution.ncdc.store.put(value, key, (e, v) => {
+      if (e) {
+        console.log(e);
+      }
       cntr++;
       // Once we are done, run the map reduce
       if (cntr === dataset.length) {

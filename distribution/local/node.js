@@ -26,6 +26,7 @@ function isValidBody(body) {
   return error;
 }
 
+const mrMap = new Map();
 
 const start = function(onStart) {
   const server = http.createServer((req, res) => {
@@ -95,13 +96,43 @@ const start = function(onStart) {
 
       /* Here, you can handle the service requests. */
 
-      // Write some code...
+      if (service.startsWith('mr') &&
+      ((method === 'register') ||
+      (method === 'deregister'))) {
+        // ex to register mr-id, you would call mr-id.register
+        if (method === 'register') {
+          if (mrMap.has(service)) {
+            error = new Error('MR id already exists');
+          } else {
+            mrMap.set(service, ...args);
+          }
+        } else if (method === 'deregister') {
+          if (!mrMap.has(service)) {
+            error = new Error('MR id does not exist');
+          } else {
+            mrMap.delete(service);
+          }
+        }
 
-      local.routes.get(service, (error, service) => {
         if (error) {
           res.end(serialization.serialize(error));
           console.error(error);
-          return;
+        } else {
+          res.end(serialization.serialize([null, null]));
+        }
+
+        return;
+      }
+
+      local.routes.get(service, (error, serviceObject) => {
+        if (error) {
+          if (service.startsWith('mr') && mrMap.has(service)) {
+            serviceObject = mrMap.get(service);
+          } else {
+            res.end(serialization.serialize(error));
+            console.error(error);
+            return;
+          }
         }
 
         /*
@@ -119,7 +150,7 @@ const start = function(onStart) {
         console.log(`[SERVER] Args: ${JSON.stringify(args)}
             ServiceCallback: ${serviceCallback}`);
 
-        service[method](...args, serviceCallback);
+        serviceObject[method](...args, serviceCallback);
       });
     });
   });
