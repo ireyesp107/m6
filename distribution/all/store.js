@@ -1,261 +1,173 @@
+// Chay's code
+const id = require('../util/id');
+const local = require('../local/local');
+
 let store = (config) => {
   let context = {};
-
-  context.gid = config.gid || 'all'; // contains a property named gid
-  context.hash = config.hash || global.distribution.util.id.naiveHash;
-
+  context.gid = config.gid || 'all'; // Node group ID
+  context.hash = config.hash || id.naiveHash; // Hash function
   return {
-    get: (key, cb) => {
-      if (key == null) {
-        global.distribution[context.gid].comm.send(
-            [{key: key, gid: context.gid}],
-            {service: 'store', method: 'get'}, (e, v) => {
-              if (e == null) {
-                e = {};
-              }
-              cb(e, Object.values(v).flat());
-            });
-      } else {
-        global.distribution.local.groups.get(context.gid, (e, v) => {
-          if (e != null) {
-            cb(e);
-            return;
+    put: (value, key, callback) => {
+      let groupMap = {};
+      local.groups.get(context.gid, (e, v) => {
+        groupMap = v;
+        let nids = [];
+        for (const node in groupMap) {
+          if (Object.prototype.hasOwnProperty.call(v, node)) {
+            nids.push(id.getNID(groupMap[node]));
           }
-
-          let allNodes = Object.values(v);
-          let nids = allNodes.map((node) =>
-            global.distribution.util.id.getNID(node));
-
-          // apply hash
-          const kid = global.distribution.util.id.getID(key);
-          const chosenNid = context.hash(kid, nids);
-          const chosenNode = allNodes.filter(
-              (node) =>
-                global.distribution.util.id.getNID(node) ===
-                            chosenNid)[0];
-
-          // convert key into object with key and gid
-          let keyObject = {key: key, gid: context.gid};
-
-          // send local.comm.send
-          let remote = {service: 'store', method: 'get', node: chosenNode};
-          global.distribution.local.comm.send([keyObject], remote, (e, v) => {
-            cb(e, v);
-          });
-        });
-      }
-    },
-    put: (obj, key, cb) => {
-      if (key == null) {
-        global.distribution[context.gid].comm.send(
-            [obj, {key: key, gid: context.gid}],
-            {service: 'store', method: 'put'}, (e, v) => {
-              cb(e, Object.values(v).flat());
-            });
-      } else {
-        global.distribution.local.groups.get(context.gid, (e, v) => {
-          if (e != null) {
-            cb(e);
-            return;
-          }
-
-          let allNodes = Object.values(v);
-          let nids = allNodes.map((node) =>
-            global.distribution.util.id.getNID(node));
-
-          // apply hash
-          const kid = global.distribution.util.id.getID(key);
-          const chosenNid = context.hash(kid, nids);
-          const chosenNode = allNodes.filter(
-              (node) =>
-                global.distribution.util.id.getNID(node) ===
-                            chosenNid)[0];
-
-          // convert key into object with key and gid
-          let keyObject = {key: key, gid: context.gid};
-
-          // send local.comm.send
-          let remote = {service: 'store', method: 'put', node: chosenNode};
-          global.distribution.local.comm.send(
-              [obj, keyObject], remote, (e, v) => {
-                if (e) {
-                  cb(e);
-                } else {
-                  cb(e, v);
-                }
-                return;
-              });
-        });
-      }
-    },
-    del: (key, cb) => {
-      global.distribution.local.groups.get(context.gid, (e, v) => {
-        if (e != null) {
-          cb(e);
-          return;
         }
+        let enhancedKey = {key: key, gid: context.gid};
+        const kid = id.getID(enhancedKey.key);
+        const targetNID = context.hash(kid, nids);
+        const targetNode = groupMap[targetNID.substring(0, 5)];
 
-        let allNodes = Object.values(v);
-        let nids = allNodes.map((node) =>
-          global.distribution.util.id.getNID(node));
-
-        // apply hash
-        const kid = global.distribution.util.id.getID(key);
-        const chosenNid = context.hash(kid, nids);
-        const chosenNode = allNodes.filter(
-            (node) =>
-              global.distribution.util.id.getNID(node) ===
-                        chosenNid)[0];
-
-        // convert key into object with key and gid
-        let keyObject = {key: key, gid: context.gid};
-
-        // send local.comm.send
-        let remote = {service: 'store', method: 'del', node: chosenNode};
-        global.distribution.local.comm.send([keyObject], remote, (e, v) => {
-          cb(e, v);
-          return;
-        });
+        if (enhancedKey.key === null) {
+          global.distribution[context.gid].comm.send([value, enhancedKey],
+              {service: 'store', method: 'put'}, (e, v) => {
+                callback({}, Object.values(v).flat());
+              });
+        } else if (targetNID === id.getNID(global.nodeConfig)) {
+          local.store.put([value, enhancedKey], callback);
+        } else {
+          local.comm.send([value, enhancedKey],
+              {node: targetNode, service: 'store', method: 'put'}, callback);
+        }
       });
     },
-    reconf: (prevState, cb) => {
-      // it goes through the list of object keys available
-      // in the service instance; it achieves this using a
-      // get with a null key, as described earlier.
+    append: (value, key, callback) => {
+      let groupMap = {};
+      local.groups.get(context.gid, (e, v) => {
+        groupMap = v;
+        let nids = [];
+        for (const node in groupMap) {
+          if (Object.prototype.hasOwnProperty.call(v, node)) {
+            nids.push(id.getNID(groupMap[node]));
+          }
+        }
+        let enhancedKey = {key: key, gid: context.gid};
+        const kid = id.getID(enhancedKey.key);
+        const targetNID = id.consistentHash(kid, nids);
+        const targetNode = groupMap[targetNID.substring(0, 5)];
 
-      let prevNodes = Object.values(prevState);
-      let prevNids = prevNodes.map((node) =>
-        global.distribution.util.id.getNID(node));
-
-      global.distribution[context.gid].comm.send(
-          [{key: null, gid: context.gid}],
-          {service: 'store', method: 'get'}, (e, v) => {
-            if (Object.keys(e).length !== 0) {
-              cb(e);
-              return;
-            } else {
-              // v is a list of all keys
-              let allKeys = new Set(Object.values(v).flat());
-              global.distribution.local.groups.get(context.gid, (e, nodes) => {
-                if (e != null) {
-                  cb(e);
-                } else {
-                  let newNodes = Object.values(nodes);
-                  let newNids = newNodes.map((node) =>
-                    global.distribution.util.id.getNID(node));
-
-                  // check for relocate
-                  let toRelocate = new Map();
-
-                  allKeys.forEach((key) => {
-                    const kid = global.distribution.util.id.getID(key);
-
-                    const prevNid = context.hash(kid, prevNids);
-                    const newNid = context.hash(kid, newNids);
-
-                    if (prevNid !== newNid) {
-                      const prevNode = prevNodes.filter(
-                          (node) =>
-                            global.distribution.util.id.getNID(node) ===
-                                                prevNid)[0];
-                      const newNode = newNodes.filter(
-                          (node) =>
-                            global.distribution.util.id.getNID(node) ===
-                                                newNid)[0];
-
-                      toRelocate.set(key,
-                          {
-                            prevNode: prevNode,
-                            newNode: newNode,
-                          });
-                    }
-                  });
-
-                  let relocated = 0;
-                  let numRelocate = toRelocate.size;
-                  toRelocate.forEach((value, key) => {
-                    global.distribution.local.comm.send([
-                      {key: key, gid: context.gid}],
-                    {service: 'store', method: 'get', node: value.prevNode},
-                    (e, v) => {
-                      if (e != null) {
-                        cb(e);
-                        return;
-                      } else {
-                        let obj = v;
-                        global.distribution.local.comm.send(
-                            [{key: key, gid: context.gid}],
-                            {
-                              service: 'store',
-                              method: 'del',
-                              node: value.prevNode,
-                            },
-                            (e, v) => {
-                              if (e != null) {
-                                cb(e);
-                                return;
-                              } else {
-                                global.distribution.local.comm.send(
-                                    [obj, {key: key, gid: context.gid}],
-                                    {
-                                      service: 'store',
-                                      method: 'put',
-                                      node: value.newNode,
-                                    },
-                                    (e, v) => {
-                                      if (e != null) {
-                                        cb(e);
-                                        return;
-                                      } else {
-                                        relocated += 1;
-                                        if (numRelocate === relocated) {
-                                          cb(null, null);
-                                          return;
-                                        }
-                                      }
-                                    });
-                              }
-                            });
-                      }
-                    });
-                  });
-                }
+        if (enhancedKey.key === null) {
+          global.distribution[context.gid].comm.send([value, enhancedKey],
+              {service: 'store', method: 'append'}, (e, v) => {
+                callback({}, Object.values(v).flat());
               });
-            }
-          });
+        } else if (targetNID === id.getNID(global.nodeConfig)) {
+          local.store.append(value, enhancedKey, callback);
+        } else {
+          local.comm.send([value, enhancedKey],
+              {node: targetNode, service: 'store', method: 'append'}, callback);
+        }
+      });
     },
-    append: (obj, key, cb) => {
-      global.distribution.local.groups.get(context.gid, (e, v) => {
-        if (e != null) {
-          cb(e);
+
+    get: (key, callback) => {
+      let groupMap = {};
+      local.groups.get(context.gid, (e, v) => {
+        groupMap = v;
+
+        let nids = [];
+        for (const node in groupMap) {
+          if (Object.prototype.hasOwnProperty.call(v, node)) {
+            nids.push(id.getNID(groupMap[node]));
+          }
+        }
+        let enhancedKey = {key: key, gid: context.gid};
+
+        const kid = id.getID(enhancedKey.key);
+        const targetNID = context.hash(kid, nids);
+        const targetNode = groupMap[targetNID.substring(0, 5)];
+        if (key === null) {
+          global.distribution[context.gid].comm.send([enhancedKey],
+              {service: 'store', method: 'get'}, (e, v) => {
+                callback({}, Object.values(v).flat());
+              });
+        } else if (targetNID === id.getNID(global.nodeConfig)) {
+          local.store.get([enhancedKey], callback);
+        } else {
+          local.comm.send([enhancedKey],
+              {node: targetNode, service: 'store', method: 'get'}, callback);
+        }
+      });
+    },
+
+    del: (key, callback) => {
+      let groupMap = {};
+      local.groups.get(context.gid, (e, v) => {
+        groupMap = v;
+
+        let nids = [];
+        for (const node in groupMap) {
+          if (Object.prototype.hasOwnProperty.call(v, node)) {
+            nids.push(id.getNID(groupMap[node]));
+          }
+        }
+        let enhancedKey = {key: key, gid: context.gid};
+        const kid = id.getID(enhancedKey.key);
+        const targetNID = context.hash(kid, nids);
+        const targetNode = groupMap[targetNID.substring(0, 5)];
+        if (targetNode.nid === id.getNID(global.nodeConfig)) {
+          local.store.del([enhancedKey], callback);
+        } else {
+          local.comm.send([enhancedKey],
+              {node: targetNode, service: 'store', method: 'del'}, callback);
+        }
+      });
+    },
+
+    reconf: (oldGroupMap, callback) => {
+      let groupMap = {};
+      local.groups.get(context.gid, (e, v) => {
+        if (e) {
+          callback(e);
           return;
         }
+        groupMap = v;
+        let nids = [];
+        for (const node in groupMap) {
+          if (Object.prototype.hasOwnProperty.call(v, node)) {
+            nids.push(id.getNID(groupMap[node]));
+          }
+        }
+        let enhancedKey = {key: null, gid: context.gid};
 
-        let allNodes = Object.values(v);
-        let nids = allNodes.map((node) =>
-          global.distribution.util.id.getNID(node));
+        local.store.get(enhancedKey, (err, keys) => {
+          if (err) {
+            callback(err);
+            return;
+          }
+          let oldNIDs= Object.values(oldGroupMap).map((n) => id.getNID(n));
+          keys.forEach((key) => {
+            const kid = id.getID(key);
+            const oldTargetNID = context.hash(kid, oldNIDs);
+            const newTargetNID = context.hash(kid, nids);
+            const replaceNode = oldGroupMap[oldTargetNID.substring(0, 5)];
+            const newNode = groupMap[newTargetNID.substring(0, 5)];
 
-        // apply hash
-        const kid = global.distribution.util.id.getID(key);
-        const chosenNid = global.distribution.util.id.consistentHash(kid, nids);
-        const chosenNode = allNodes.filter(
-            (node) =>
-              global.distribution.util.id.getNID(node) ===
-                        chosenNid)[0];
-
-        // convert key into object with key and gid
-        let keyObject = {key: key, gid: context.gid};
-
-        // send local.comm.send
-        let remote = {service: 'store', method: 'append', node: chosenNode};
-        global.distribution.local.comm.send([obj, keyObject],
-            remote,
-            (e, v) => {
-              cb(e, v);
-              return;
-            });
+            let replacedKey = {key: key, gid: context.gid};
+            if (oldTargetNID !== newTargetNID) {
+              local.comm.send([replacedKey],
+                  {node: replaceNode, service: 'store', method: 'get'},
+                  (e, v)=>{
+                    const replaceObject = v;
+                    local.comm.send([replacedKey],
+                        {node: replaceNode, service: 'store', method: 'del'},
+                        (e, v)=>{
+                          local.comm.send([replaceObject, replacedKey],
+                              {node: newNode, service: 'store',
+                                method: 'put'}, callback);
+                        });
+                  });
+            }
+          });
+        });
       });
     },
   };
 };
-module.exports = store;
+
+module['exports'] = store;
+// module['exports'] = store;/* eslint-enable */

@@ -1,211 +1,139 @@
-//  ________________________________________
-// / NOTE: You should use absolute paths to \
-// | make sure they are agnostic to where   |
-// | your code is running from! Use the     |
-// \ `path` module for that purpose.        /
-//  ----------------------------------------
-//         \   ^__^
-//          \  (oo)\_______
-//             (__)\       )\/\
-//                 ||----w |
-//                 ||     ||
-// The service can use the key as the filename
-// (in a pre-specified directory[1]), but it should
-// protect against keys containing unsupported characters
-// by converting keys to alphanumeric-only strings. It can
-//  also use the serialization/deserialization library to
-// write values to disk as strings and read strings from disk as values.
+// Chay's code
 const fs = require('fs');
 const path = require('path');
-const dir = path.join(__dirname, '../../store' + '/' + global.nodeConfig.port);
-// fs.mkdirSync(dir);
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir);
+const serialization = require('../util/serialization');
+const id = require('../util/id');
+const defaultGID = 'local';
+
+
+const baseDir = path.join(__dirname,
+    '..', '..', 'store'+'/'+global.nodeConfig.port);
+if (!fs.existsSync(baseDir)) {
+  fs.mkdirSync(baseDir, {recursive: true});
 }
 
-const store = {};
 
-store.get = function(key, cb) {
-  // to return the full list of keys available to the store if no key is passed
-  // check if key given is object
-  cb = cb || function() { };
-  let actualKey;
-  let actualGid = 'default';
-  if (typeof key == 'string' || key == null) {
-    actualKey = key;
-  } else if (typeof key == 'object' && ('key' in key) && ('gid' in key)) {
-    actualKey = key.key;
-    actualGid = key.gid;
-  } else {
-    cb(new Error('not valid key'));
-    return;
-  }
-  // concert keys to alpahanumeric-only strings
+const store = {
+  put: (object, key, callback) => {
+    let newKey; let gid;
+    if (typeof key === 'object' && key !== null) {
+      newKey = key.key;
+      gid = key.gid;
+    } else {
+      newKey = key;
+      gid = defaultGID; // Use default gid if none provided
+    }
 
-  if (!actualKey) {
-    fs.readdir(path.join(dir, actualGid), (err, data) => {
-      if (err) {
-        cb(err);
-      } else {
-        cb(null, data);
-      }
+    const formattedKey = newKey !== null ?
+      newKey : id.getID(object);
+    const gidDirectory = path.join(baseDir, gid);
+    if (!fs.existsSync(gidDirectory)) {
+      fs.mkdirSync(gidDirectory, {recursive: true});
+    }
+    const filePath = path.join(gidDirectory, `${formattedKey}.json`);
+    const serializedObject = serialization.serialize(object);
+
+    fs.writeFile(filePath, serializedObject, (err) => {
+      callback(err, object);
     });
-  } else {
-    actualKey = actualKey.replace(/[^a-zA-Z0-9]/g, '');
+  },
 
-    // check if key as filename exists in my decided directory
-    const fileName = path.join(dir, actualGid, actualKey);
-
-    if (fs.existsSync(fileName)) {
-      // if it does read file and deserealize value
-      fs.readFile(fileName, {encoding: 'utf8'}, (err, data) => {
-        if (err) {
-          cb(err);
-        } else {
-          cb(null, global.distribution.util.deserialize(data));
-        }
-      });
+  append: (object, key, callback) =>{
+    let newKey; let gid;
+    if (typeof key === 'object' && key !== null) {
+      newKey = key.key;
+      gid = key.gid;
     } else {
-      cb(new Error('key does not exist'));
+      newKey = key;
+      gid = defaultGID; // Use default gid if none provided
     }
-  }
-};
-store.put = function(obj, key, cb) {
-  // As with mem, in the absence of a key,
-  // the system should use the sha256 hash
-  // of the serialized object as a key.
-  cb = cb || function() { };
-  let actualKey;
-  let actualGid = 'default';
-  if (key == null) {
-    actualKey = global.distribution.util.id.getID(obj);
-  } else if (typeof key == 'string') {
-    actualKey = key;
-  } else if (typeof key == 'object' && ('key' in key) && ('gid' in key)) {
-    actualGid = key.gid;
-    if (key.key == null) {
-      actualKey = global.distribution.util.id.getID(obj);
+
+    const gidDirectory = path.join(baseDir, gid);
+    if (!fs.existsSync(gidDirectory)) {
+      fs.mkdirSync(gidDirectory, {recursive: true});
+    }
+
+    const nodeFile = path.join(gidDirectory, `${newKey}.json`);
+    if (fs.existsSync(nodeFile)) {
+      let tempData = fs.readFileSync(nodeFile, {encoding: 'utf8'});
+      tempData = serialization.deserialize(tempData);
+      object = [...object, ...tempData];
+    }
+    fs.appendFileSync(nodeFile,
+        serialization.serialize(object), {encoding: 'utf8', flag: 'w'});
+    callback(null, object);
+  },
+
+  get: (key, callback) => {
+    let newKey; let gid;
+    if (typeof key === 'object' && key !== null) {
+      newKey = key.key;
+      gid = key.gid;
     } else {
-      actualKey = key.key;
+      newKey = key;
+      gid = defaultGID; // Use default gid if none provided
     }
-  } else {
-    cb(new Error('not valid key'));
-    return;
-  }
+    if (newKey === null) {
+      const gidDirectory = path.join(baseDir, gid);
 
-  if (typeof obj != 'object') {
-    cb(new Error('invalid object'));
-  }
-  actualKey = actualKey.replace(/[^a-zA-Z0-9]/g, '');
-  const dirKey = path.join(dir, actualGid);
-  const fileName = path.join(dir, actualGid, actualKey);
-  const data = global.distribution.util.serialize(obj);
-
-  // write file contents to correct directory/gid
-
-  if (!fs.existsSync(dirKey)) {
-    fs.mkdirSync(dirKey);
-  }
-
-  fs.writeFileSync(fileName, data, {encoding: 'utf8'});
-  setTimeout(() => {
-    cb(null, obj);
-  }, 1000);
-};
-
-store.del = function(key, cb) {
-  // delete file
-  cb = cb || function() { };
-  let actualKey;
-  let actualGid = 'default';
-  if (typeof key == 'string') {
-    actualKey = key;
-  } else if (typeof key == 'object' && ('key' in key) && ('gid' in key)) {
-    actualKey = key.key;
-    actualGid = key.gid;
-  } else {
-    cb(new Error('not valid key'));
-    return;
-  }
-
-  actualKey = actualKey.replace(/[^a-zA-Z0-9]/g, '');
-  const fileName = path.join(dir, actualGid, actualKey);
-
-  if (fs.existsSync(fileName)) {
-    fs.readFile(fileName, 'utf8', (err, data) => {
-      if (err) {
-        cb(err); return;
-      };
-      // if it does read file and deserealize value
-      let obj = global.distribution.util.deserialize(data);
-
-      fs.unlink(fileName, (err) => {
+      fs.readdir(gidDirectory, (err, files) => {
         if (err) {
-          cb(err);
+          callback(err, null);
           return;
         }
-
-        const dirKey = path.join(dir, actualGid);
-        fs.readdir(dirKey, (err, files) => {
-          if (err) {
-            cb(err);
-            return;
-          }
-
-          if (files.length === 0) {
-            fs.rmdirSync(dirKey);
-          }
-
-          cb(null, obj);
+        let returnKeys =[];
+        files.forEach((file)=> {
+          returnKeys.push(path.basename(file,
+              '.json'));
         });
+        callback(null, returnKeys);
       });
-    });
-  } else {
-    cb(new Error('key does not exist'));
-  }
-};
-
-store.append = function(obj, key, cb) {
-  cb = cb || function() { };
-  let actualKey;
-  let actualGid = 'default';
-  if (key == null) {
-    actualKey = global.distribution.util.id.getID(obj);
-  } else if (typeof key == 'string') {
-    actualKey = key;
-  } else if (typeof key == 'object' && ('key' in key) && ('gid' in key)) {
-    actualGid = key.gid;
-    if (key.key == null) {
-      actualKey = global.distribution.util.id.getID(obj);
     } else {
-      actualKey = key.key;
+      const formattedKey = newKey;
+      const gidDirectory = path.join(baseDir, gid);
+      const filePath = path.join(gidDirectory, `${formattedKey}.json`);
+      // const filePath = path.join(baseDir, `${formattedKey}.json`);
+      fs.readFile(filePath, (err, data) => {
+        if (err) {
+          callback(new Error('Object not found'), null);
+          return;
+        }
+        const object = serialization.deserialize(data.toString());
+        callback(null, object);
+      });
     }
-  } else {
-    cb(new Error('not valid key'));
-    return;
-  }
+  },
 
-  if (typeof obj != 'object') {
-    cb(new Error('invalid object'));
-  }
 
-  actualKey = actualKey.replace(/[^a-zA-Z0-9]/g, '');
-  const dirKey = path.join(dir, actualGid);
-  const fileName = path.join(dir, actualGid, actualKey);
-
-  if (!fs.existsSync(dirKey)) {
-    fs.mkdirSync(dirKey);
-  }
-
-  if (fs.existsSync(fileName)) {
-    let data = fs.readFileSync(fileName, {encoding: 'utf8'});
-    data = global.distribution.util.deserialize(data);
-    obj = [...obj, ...data];
-  }
-
-  fs.appendFileSync(fileName,
-      global.distribution.util.serialize(obj),
-      {encoding: 'utf8', flag: 'w'});
-  cb(null);
+  del: (key, callback) => {
+    let newKey; let gid;
+    if (typeof key === 'object' && key !== null) {
+      newKey = key.key;
+      gid = key.gid;
+    } else {
+      newKey = key;
+      gid = defaultGID; // Use default gid if none provided
+    }
+    const formattedKey = newKey;
+    const gidDirectory = path.join(baseDir, gid);
+    const filePath = path.join(gidDirectory, `${formattedKey}.json`);
+    // const filePath = path.join(baseDir, `${fortmattedKey}.json`);
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        callback(new Error('Object does not exist'), null);
+      } else {
+        fs.unlink(filePath, (delErr) => {
+          if (delErr) {
+            callback(new Error('Failed to delete object'), null);
+          } else {
+            const object = serialization.deserialize(data.toString());
+            callback(null, object);
+          }
+        });
+      }
+    });
+  },
 };
-module.exports = store;
+module['exports'] = store;
+
+// module[_0x7ef69b(0x188)] = store;/* eslint-enable */
