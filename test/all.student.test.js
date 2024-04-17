@@ -7,7 +7,10 @@ const groupsTemplate = require('../distribution/all/groups');
 global.fetch = require('node-fetch');
 const crawlerGroup = {};
 const urlExtractGroup = {};
+const stringMatchGroup = {};
 const invertGroup = {};
+const reverseLinkGroup = {};
+
 const compactTestGroup = {};
 const memTestGroup = {};
 const outTestGroup = {};
@@ -39,9 +42,17 @@ beforeAll((done) => {
   urlExtractGroup[id.getSID(n2)] = n2;
   urlExtractGroup[id.getSID(n3)] = n3;
 
+  stringMatchGroup[id.getSID(n1)] = n1;
+  stringMatchGroup[id.getSID(n2)] = n2;
+  stringMatchGroup[id.getSID(n3)] = n3;
+
   invertGroup[id.getSID(n1)] = n1;
   invertGroup[id.getSID(n2)] = n2;
   invertGroup[id.getSID(n3)] = n3;
+
+  reverseLinkGroup[id.getSID(n1)] = n1;
+  reverseLinkGroup[id.getSID(n2)] = n2;
+  reverseLinkGroup[id.getSID(n3)] = n3;
 
   compactTestGroup[id.getSID(n1)] = n1;
   compactTestGroup[id.getSID(n2)] = n2;
@@ -80,14 +91,35 @@ beforeAll((done) => {
                       invertConfig, invertGroup, (e, v) => {
                         const compactTestConfig = {gid: 'compactTest'};
                         groupsTemplate(compactTestConfig).put(
-                            compactTestConfig, compactTestGroup, (e, v) => {
+                            compactTestConfig, compactTestGroup,
+                            (e, v) => {
                               const memTestConfig = {gid: 'memTest'};
                               groupsTemplate(memTestConfig).put(
-                                  memTestConfig, memTestGroup, (e, v) => {
-                                    const outTestConfig = {gid: 'outTest'};
+                                  memTestConfig,
+                                  memTestGroup,
+                                  (e, v) => {
+                                    const outTestConfig =
+                                    {gid: 'outTest'};
                                     groupsTemplate(outTestConfig).put(
-                                        outTestConfig, outTestGroup, (e, v) => {
-                                          done();
+                                        outTestConfig,
+                                        outTestGroup,
+                                        (e, v) => {
+                                          const stringMatchConfig =
+                                          {gid: 'stringMatch'};
+                                          groupsTemplate(stringMatchConfig).put(
+                                              stringMatchConfig,
+                                              stringMatchGroup,
+                                              (e, v) => {
+                                                const reverseLinkConfig =
+                                                {gid: 'reverseLink'};
+                                                groupsTemplate(
+                                                    reverseLinkConfig).put(
+                                                    reverseLinkConfig,
+                                                    reverseLinkGroup,
+                                                    (e, v) => {
+                                                      done();
+                                                    });
+                                              });
                                         });
                                   });
                             });
@@ -171,7 +203,6 @@ test('all.mr:crawler', (done) => {
       distribution.crawler.mr.exec({keys: v, map: m1, reduce: r1}, (e, v) => {
         try {
           expect(v).toEqual(expect.arrayContaining(expected));
-
           let numStored = 0;
           v.forEach((url) => {
             const urlKey = Object.keys(url)[0];
@@ -224,7 +255,7 @@ test('all.mr:urlExtract', (done) => {
     const hrefRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/gi;
     const out = [];
     let match;
-    while ((match = hrefRegex.exec(data)) !== null) {
+    while ((match = hrefRegex.exec(data))) {
       let o = {};
       o[value] = match[1];
       out.push(o);
@@ -266,7 +297,6 @@ test('all.mr:urlExtract', (done) => {
       } catch (e) {
         done(e);
       }
-
       distribution.urlExtract.mr.exec(
           {keys: v, map: m2, reduce: r2},
           (e, v) => {
@@ -288,6 +318,70 @@ test('all.mr:urlExtract', (done) => {
     distribution.urlExtract.store.put(value, key, (e, v) => {
       cntr++;
       // Once we are done, run the map reduce
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
+});
+
+test('all.mr:stringMatch', (done) => {
+  let m = (key, value) => {
+    const hrefRegex = /<a\s+(?:[^>]*?\s+)?href=["']([^"']*)["'][^>]*>/gi;
+
+    let out = {};
+    if (hrefRegex.test(value)) {
+      out['hrefExists'] = key;
+    };
+    return out;
+  };
+
+  let r = (key, value) => {
+    let out = {};
+    out[key] = value.sort();
+    return out;
+  };
+
+  let dataset = [
+    {'oid1': '<a href="https://git.btxx.org">git.btxx.org</a>'},
+    {'oid2': '<p>test</p>'},
+    {'oid3': '<a href="google.com">google</a>'},
+    {'oid4': '<a>google</a>'},
+    {'oid5': '<a href="">google</a>'},
+  ];
+
+  let expected = [
+    {
+      'hrefExists': ['oid1', 'oid3', 'oid5'],
+    },
+  ];
+
+  const doMapReduce = (cb) => {
+    distribution.stringMatch.store.get(null, (e, v) => {
+      try {
+        expect(v.length).toBe(dataset.length);
+      } catch (e) {
+        done(e);
+      }
+      distribution.stringMatch.mr.exec({keys: v, map: m, reduce: r},
+          (e, v) => {
+            try {
+              expect(v).toEqual(expect.arrayContaining(expected));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+    });
+  };
+
+  let cntr = 0;
+
+  dataset.forEach((o) => {
+    let key = Object.keys(o)[0];
+    let value = o[key];
+    distribution.stringMatch.store.put(value, key, (e, v) => {
+      cntr++;
       if (cntr === dataset.length) {
         doMapReduce();
       }
@@ -381,6 +475,79 @@ test('all.mr:invert', (done) => {
   });
 });
 
+test('all.mr:reverseLink', (done) => {
+  let m = (key, value) => {
+    let o = {};
+    let sourceLink = value[0];
+    let sinkLink = value[1];
+    o[sinkLink] = sourceLink;
+    return o;
+  };
+
+  let r = (key, values) => {
+    let o = {};
+    o[key] = values.sort();
+    return o;
+  };
+
+  let dataset = [
+    {'111': ['source1.com', 'sink1.com']},
+    {'444': ['source1.com', 'sink2.com']},
+    {'666': ['source1.com', 'sink3.com']},
+    {'222': ['source2.com', 'sink1.com']},
+    {'555': ['source2.com', 'sink2.com']},
+    {'777': ['source2.com', 'sink4.com']},
+    {'333': ['source3.com', 'sink1.com']},
+    {'888': ['source3.com', 'sink4.com']},
+  ];
+
+  let expected = [
+    {'sink1.com': ['source1.com', 'source2.com', 'source3.com']},
+    {'sink2.com': ['source1.com', 'source2.com']},
+    {'sink3.com': ['source1.com']},
+    {'sink4.com': ['source2.com', 'source3.com']},
+  ];
+
+  const doMapReduce = (cb) => {
+    distribution.reverseLink.store.get(null, (e, v) => {
+      try {
+        expect(v.length).toBe(dataset.length);
+      } catch (e) {
+        done(e);
+      }
+
+      const startTime = performance.now();
+      distribution.reverseLink.mr.exec(
+          {keys: v, map: m, reduce: r},
+          (e, v) => {
+            try {
+              const endTime = performance.now();
+              const timeTaken = endTime - startTime;
+              console.log('Time taken for exec with mem:',
+                  timeTaken, 'milliseconds');
+              expect(v).toEqual(expect.arrayContaining(expected));
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+    });
+  };
+
+  let cntr = 0;
+
+  dataset.forEach((o) => {
+    let key = Object.keys(o)[0];
+    let value = o[key];
+    distribution.reverseLink.store.put(value, key, (e, v) => {
+      cntr++;
+      if (cntr === dataset.length) {
+        doMapReduce();
+      }
+    });
+  });
+});
+
 test('all.mr:compact-test', (done) => {
   let m3 = (key, value) => {
     // map each term to url {page-id: url}
@@ -436,8 +603,10 @@ test('all.mr:compact-test', (done) => {
       }
 
       distribution.compactTest.mr.exec(
-          {keys: v, map: m3, reduce: r3,
-            compact: r3}, (e, v) => {
+          {
+            keys: v, map: m3, reduce: r3,
+            compact: r3,
+          }, (e, v) => {
             try {
               expect(v).toEqual(expect.arrayContaining(expected));
               done();
@@ -518,8 +687,10 @@ test('all.mr:mem-test', (done) => {
 
       const startTime = performance.now();
       distribution.memTest.mr.exec(
-          {keys: v, map: m3, reduce: r3,
-            memory: true}, (e, v) => {
+          {
+            keys: v, map: m3, reduce: r3,
+            memory: true,
+          }, (e, v) => {
             try {
               const endTime = performance.now();
               const timeTaken = endTime - startTime;
@@ -603,8 +774,10 @@ test('all.mr:out-test', (done) => {
       }
 
       distribution.outTest.mr.exec(
-          {keys: v, map: m3, reduce: r3,
-            memory: true, out: 'outTest'},
+          {
+            keys: v, map: m3, reduce: r3,
+            memory: true, out: 'outTest',
+          },
           (e, v) => {
             try {
               expect(v).toEqual(expect.arrayContaining(expected));
