@@ -1,0 +1,4 @@
+<!DOCTYPE html><link rel="icon" href="data:,">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CV</title>
+<p>Hi, I'm Brad.<p>Resume:<p>Fullstack Engineer @ SerpApi, 2023-<br>Sr. Product Designer @ Donorbox, 2021-2023<br>Web Designer @ Purism, 2019-2021<br>Product Designer @ Benbria, 2013-2019<br>Web Designer @ Netvatise, 2009-2013<p>Links:<p><a href="https://btxx.org">btxx.org</a><br><a href="https://git.btxx.org">git.btxx.org</a><p>bt@btxx.org
