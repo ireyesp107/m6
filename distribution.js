@@ -47,7 +47,7 @@ global.distribution = distribution;
 global.distribution.convert = require('html-to-text').convert;
 global.distribution.fs = require('fs');
 global.distribution.path = require('path');
-global.distribution.testFilesPath = '/usr/src/app/m5/testFiles';
+global.distribution.testFilesPath = '/usr/src/app/m6/testFiles';
 
 // global.distribution.jsdom = require('jsdom').JSDOM;
 // global.distribution.url = require('url').URL;
