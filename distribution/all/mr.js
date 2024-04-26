@@ -26,12 +26,14 @@ const mr = function (config) {
                 cb(null, {});
                 return;
               }
-              
+
               //get the intersection between the keys and the configuration.keys
               const intersection = config.keys.filter(key => v.includes(key));
 
               const numKeys = intersection.length;
               let tempValues = {};
+              let processedKeys = 0;
+
               intersection.forEach((localKey) => {
                 global.distribution.local.store.get(
                   { key: localKey, gid: context.gid },
@@ -41,8 +43,14 @@ const mr = function (config) {
                       Promise.resolve(
                         config.map(localKey, localValue))
                         .then((response) => {
-                          tempValues[localKey] = response;
-                          if (numKeys === Object.keys(tempValues).length) {
+                          if (response && response.skip) {
+                            // If the response is { skip: true }, skip processing
+                            processedKeys++;
+                          } else {
+                            tempValues[localKey] = response;
+                          }
+
+                          if (processedKeys + Object.keys(tempValues).length === numKeys) {
                             global.distribution
                               .local[config.typeStorage].put(
                                 tempValues,
@@ -56,24 +64,41 @@ const mr = function (config) {
                           }
                         });
                     } else {
-                      tempValues[localKey] = config.map(localKey, localValue);
-                      if (numKeys === Object.keys(tempValues).length) {
+                      // tempValues[localKey] = config.map(localKey, localValue);
+                      // if (numKeys === Object.keys(tempValues).length) {
+                      //   global.distribution.local[config.typeStorage].put(
+                      //     tempValues,
+                      //     {
+                      //       key: 'tempResults',
+                      //       gid: context.gid
+                      //     },
+                      //     (e, v) => {
+                      //       cb(null, tempValues);
+                      //     });
+                      // }
+                      const response = config.map(localKey, localValue);
+                      if (response && response.skip) {
+                        // If the response is { skip: true }, skip processing
+                        processedKeys++;
+                      } else {
+                        tempValues[localKey] = response;
+                      }
+
+                      if (processedKeys + Object.keys(tempValues).length === numKeys) {
                         global.distribution.local[config.typeStorage].put(
                           tempValues,
-                          {
-                            key: 'tempResults',
-                            gid: context.gid
-                          },
+                          { key: 'tempResults', gid: context.gid },
                           (e, v) => {
                             cb(null, tempValues);
-                          });
+                          }
+                        );
                       }
                     }
                   });
               });
             });
         };
-      
+
 
 
         mrService.shuffle = function (config, context, cb) {
@@ -152,6 +177,7 @@ const mr = function (config) {
                   intersection.push(key);
                 }
               }
+
               const reducePairs = [];
               if (intersection.length > 0) {
                 intersection.forEach((myKey) => {
@@ -213,13 +239,11 @@ const mr = function (config) {
                     if (allKeys.has(undefined)) {
                       allKeys.delete(undefined);
                     }
-                    console.log(allKeys);
                     remote.method = 'reduce';
                     global.distribution[context.gid].comm.send(
                       [configuration, context],
                       remote,
                       (e, reduceValue) => {
-                        
                         if (configuration.iterations > 1) {
                           // Extract the keys from the reduceValue
                           const extractedValues = Object.values(reduceValue).flatMap(group => {
@@ -277,7 +301,7 @@ const mr = function (config) {
                                 runMapReduce();
                               } else {
                                 // callback(null, returnArray);
-                            
+
                                 const allPairs =
                                   Object.values(reduceValue).flat();
 

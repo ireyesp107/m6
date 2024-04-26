@@ -3,6 +3,8 @@ const distribution = require('../distribution');
 const id = distribution.util.id;
 
 const groupsTemplate = require('../distribution/all/groups');
+const fs = require('fs');
+const path = require('path');
 
 global.fetch = require('node-fetch');
 const crawlerGroup = {};
@@ -281,6 +283,7 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
     };
 
     let r1 = (key, values) => {
+        console.log("the values for reduce ", key, values);
         let out = {};
         // Combine the extracted URLs from all the values
         let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
@@ -394,4 +397,140 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
     });
 });
 
+test('all.mr:crawler-start-urltxt', (done) => {
+    let m1 = async (key, value) => {
+        const response = await global.fetch(value);
+        const body = await response.text();
 
+        // Extract URLs from the fetched HTML content using JSDOM
+        function extractLinks(html, baseUrl) {
+            const dom = new global.distribution.jsdom(html);
+            const links = Array.from(dom.window.document.querySelectorAll('a'))
+                .map((link) => link.href)
+                .filter((href) => href !== '' && !href.startsWith('?'))
+                .map((href) => {
+                    if (href.startsWith('/')) {
+                        return new URL(href, baseUrl).href;
+                    } else {
+                        return new URL(href, `${baseUrl}/`).href;
+                    }
+                });
+            return links;
+        }
+
+        const extractedUrls = extractLinks(body, value);
+        let out = {};
+        out[value] = { body: body, extractedUrls: extractedUrls };
+
+        global.distribution.crawler.store.put(out[value], value, (e, v) => { });
+        return out;
+    };
+
+    let r1 = (key, values) => {
+        let out = {};
+        // Combine the extracted URLs from all the values
+        let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
+        let uniqueUrls = [...new Set(allExtractedUrls)];
+        out[key] = uniqueUrls;
+        return out;
+    };
+
+    let dataset = [
+        {
+            '000': 'https://atlas.cs.brown.edu/data/gutenberg/6/0/0/',
+        },
+    ];
+
+    let expected = [
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/": [Array] }
+    ];
+
+    /* Now we do the same thing but on the cluster */
+    const doMapReduce = (cb) => {
+        distribution.crawler.store.get(null, (e, v) => {
+            try {
+                console.log(v);
+                expect(v.length).toBe(dataset.length);
+            } catch (e) {
+                done(e);
+            }
+
+            distribution.crawler.mr.exec({ keys: v, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
+                try {
+                    const receivedKeys = v.map((item) => Object.keys(item)[0]);
+                    const expectedKeys = expected.map((item) => Object.keys(item)[0]);
+
+                    // Check if the received keys match the expected keys
+                    expect(receivedKeys.sort()).toEqual(expectedKeys.sort());
+
+                    // Check if each value in the received data is an array
+                    const receivedData = v.map((item) => {
+                        const key = Object.keys(item)[0];
+                        const value = item[key];
+                        return { [key]: Array.isArray(value) };
+                    });
+
+                    // Check if the received data matches the expected structure
+                    expect(receivedData).toEqual(expect.arrayContaining(
+                        expected.map((item) => {
+                            const key = Object.keys(item)[0];
+                            return { [key]: true };
+                        })
+                    ));
+
+                    // Save the output to urls.txt
+                    const urlsToSave = v.flatMap((item) => {
+                        const key = Object.keys(item)[0];
+                        return item[key];
+                    });
+
+                    const urlsString = urlsToSave.join('\n');
+
+                    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsString, (err) => {
+                        if (err) {
+                            console.error('Error writing to urls.txt:', err);
+                            done(err);
+                        } else {
+                            console.log('URLs saved to urls.txt');
+
+                            let numStored = 0;
+                            v.forEach((url) => {
+                                const urlKey = Object.keys(url)[0];
+                                global.distribution.crawler.store.get(urlKey, (e, v) => {
+                                    if (v) {
+                                        numStored += 1;
+                                        if (numStored === expected.length) {
+                                            done();
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    });
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    };
+
+    let cntr = 0;
+
+    // We send the dataset to the cluster
+    dataset.forEach((o) => {
+        let key = Object.keys(o)[0];
+        let value = o[key];
+        distribution.crawler.store.put(value, key, (e, v) => {
+            if (e) {
+                console.log(e);
+                console.log(value);
+                console.log(key);
+            }
+            cntr++;
+            // Once we are done, run the map reduce
+            if (cntr === dataset.length) {
+                doMapReduce();
+            }
+        });
+    });
+});
