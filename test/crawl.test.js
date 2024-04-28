@@ -1,4 +1,5 @@
 global.nodeConfig = { ip: '127.0.0.1', port: 8070 };
+const { Console } = require('console');
 const distribution = require('../distribution');
 const id = distribution.util.id;
 
@@ -242,14 +243,27 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
         // Extract URLs from the fetched HTML content using JSDOM
         function extractLinks(html, baseUrl) {
             const dom = new global.distribution.jsdom(html);
-            const links = Array.from(dom.window.document.querySelectorAll('a'))
-                .map((link) => link.href)
-                .filter((href) => href !== '' && !href.startsWith('?'))
-                .map((href) => {
+                const links = Array.from(dom.window.document.querySelectorAll('a'))
+                .filter((link) => {
+                    // Skipping links that have no href attribute or that start with '?'
+                    const href = link.href;
+                    if (href === '' || href.startsWith('?')) {
+                        return false;
+                    }
+                    // Skipping the "Parent Directory" link
+                    const text = link.textContent.trim();
+                    if (text === 'Parent Directory') {
+                        return false;
+                    }
+                    return true;
+                })
+                .map((link) => {
+                    const href = link.href;
+                    // Resolve relative URLs to absolute URLs
                     if (href.startsWith('/')) {
                         return new URL(href, baseUrl).href;
                     } else {
-                        return new URL(href, `${baseUrl}/`).href;
+                        return new URL(href, `${baseUrl}`).href;
                     }
                 });
             return links;
@@ -283,7 +297,7 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
     };
 
     let r1 = (key, values) => {
-        console.log("the values for reduce ", key, values);
+        //console.log("the values for reduce ", key, values);
         let out = {};
         // Combine the extracted URLs from all the values
         let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
@@ -300,33 +314,32 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
 
     //needs further testing
     let expected = [
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6005/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6009/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//9/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6002/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6004/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6001/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6007/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//2/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6003/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6008/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6006/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//8/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//5/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//4/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//3/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//1/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//6000/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//7/": [Array] },
-        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0//0/": [Array] }];
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6005/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6009/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/9/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6002/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6004/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6001/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6007/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/2/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6003/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6008/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6006/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/8/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/5/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/4/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/3/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/1/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/6000/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/7/": [Array] },
+        { "https://atlas.cs.brown.edu/data/gutenberg/6/0/0/0/": [Array] }];
 
     /* Now we do the same thing but on the cluster */
     const doMapReduce = (cb) => {
         distribution.crawler.store.get(null, (e, v) => {
             try {
-                console.log(v);
+                //console.log(v);
                 expect(v.length).toBe(dataset.length);
             } catch (e) {
                 done(e);
@@ -405,14 +418,27 @@ test('all.mr:crawler-start-urltxt', (done) => {
         // Extract URLs from the fetched HTML content using JSDOM
         function extractLinks(html, baseUrl) {
             const dom = new global.distribution.jsdom(html);
-            const links = Array.from(dom.window.document.querySelectorAll('a'))
-                .map((link) => link.href)
-                .filter((href) => href !== '' && !href.startsWith('?'))
-                .map((href) => {
+                const links = Array.from(dom.window.document.querySelectorAll('a'))
+                .filter((link) => {
+                    // Skipping links that have no href attribute or that start with '?'
+                    const href = link.href;
+                    if (href === '' || href.startsWith('?')) {
+                        return false;
+                    }
+                    // Skipping the "Parent Directory" link
+                    const text = link.textContent.trim();
+                    if (text === 'Parent Directory') {
+                        return false;
+                    }
+                    return true;
+                })
+                .map((link) => {
+                    const href = link.href;
+                    // Resolve relative URLs to absolute URLs
                     if (href.startsWith('/')) {
                         return new URL(href, baseUrl).href;
                     } else {
-                        return new URL(href, `${baseUrl}/`).href;
+                        return new URL(href, `${baseUrl}`).href;
                     }
                 });
             return links;
