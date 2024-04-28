@@ -252,7 +252,11 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
                     }
                     // Skipping the "Parent Directory" link
                     const text = link.textContent.trim();
-                    if (text === 'Parent Directory') {
+                    if (text === 'Parent Directory' 
+                    || text === 'books.txt'
+                    || text === 'donate-howto.txt' 
+                    || text === 'indextree.txt'
+                    || text === 'retired/') {
                         return false;
                     }
                     return true;
@@ -427,7 +431,11 @@ test('all.mr:crawler-start-urltxt', (done) => {
                     }
                     // Skipping the "Parent Directory" link
                     const text = link.textContent.trim();
-                    if (text === 'Parent Directory') {
+                    if (text === 'Parent Directory' 
+                    || text === 'books.txt'
+                    || text === 'donate-howto.txt' 
+                    || text === 'indextree.txt'
+                    || text === 'retired/') {
                         return false;
                     }
                     return true;
