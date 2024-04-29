@@ -6,6 +6,7 @@ const id = distribution.util.id;
 const groupsTemplate = require('../distribution/all/groups');
 const fs = require('fs');
 const path = require('path');
+const { store } = require('../distribution/local/local');
 
 global.fetch = require('node-fetch');
 const crawlerGroup = {};
@@ -17,6 +18,10 @@ const reverseLinkGroup = {};
 const compactTestGroup = {};
 const memTestGroup = {};
 const outTestGroup = {};
+let uniqueKey = 0;
+let iteration = 0;
+jest.setTimeout(30000)
+
 
 /*
    This hack is necessary since we can not
@@ -491,6 +496,7 @@ test('all.mr:crawler-start-urltxt', (done) => {
 
             distribution.crawler.mr.exec({ keys: v, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
                 try {
+                    console.log(v)
                     const receivedKeys = v.map((item) => Object.keys(item)[0]);
                     const expectedKeys = expected.map((item) => Object.keys(item)[0]);
 
@@ -566,5 +572,162 @@ test('all.mr:crawler-start-urltxt', (done) => {
                 doMapReduce();
             }
         });
+    });
+});
+
+
+test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/',(err) => {
+        if (err) {
+            console.error('Error writing to urls.txt:', err);
+            done(err);
+        } else {
+            console.log('Gutenberg homepage is saved');
+        }
+
+        function checkFileEmpty(){
+        const data = fs.readFileSync(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+        return data;
+        //return fs.readFile(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+        }
+    let m1 = async (key, value) => {
+        const response = await global.fetch(value);
+        const body = await response.text();
+
+        // Extract URLs from the fetched HTML content using JSDOM
+        function extractLinks(html, baseUrl) {
+            const dom = new global.distribution.jsdom(html);
+                const links = Array.from(dom.window.document.querySelectorAll('a'))
+                .filter((link) => {
+                    // Skipping links that have no href attribute or that start with '?'
+                    const href = link.href;
+                    if (href === '' || href.startsWith('?')) {
+                        return false;
+                    }
+                    // Skipping the "Parent Directory" link
+                    const text = link.textContent.trim();
+                    if (text === 'Parent Directory' 
+                    || text === 'books.txt'
+                    || text === 'donate-howto.txt' 
+                    || text === 'indextree.txt'
+                    || text === 'retired/') {
+                        return false;
+                    }
+                    return true;
+                })
+                .map((link) => {
+                    const href = link.href;
+                    // Resolve relative URLs to absolute URLs
+                    if (href.startsWith('/')) {
+                        return new URL(href, baseUrl).href;
+                    } else {
+                        return new URL(href, `${baseUrl}`).href;
+                    }
+                });
+            return links;
+        }
+
+        const extractedUrls = extractLinks(body, value);
+        let out = {};
+        out[value] = { body: body, extractedUrls: extractedUrls };
+
+        global.distribution.crawler.store.put(out[value], value, (e, v) => { });
+        return out;
+    };
+
+    let r1 = (key, values) => {
+        let out = {};
+        // Combine the extracted URLs from all the values
+        let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
+        let uniqueUrls = [...new Set(allExtractedUrls)];
+        out[key] = uniqueUrls;
+        return out;
+    };
+    
+    /* Now we do the same thing but on the cluster */
+    const doMapReduce = (cb) => {
+        if(iteration > 3 || checkFileEmpty().trim() === ''){
+            done();
+            return;
+        }
+        iteration++;
+
+    // We send the dataset to the cluster
+    let urlsDataset = ''
+    urlsDataset = checkFileEmpty().trim().split('\n');
+    
+    let cntr=0
+    let toDelete = []
+    urlsDataset.forEach((o) => {
+        console.log(o)
+        uniqueKey+=1
+        toDelete.push(uniqueKey)
+         distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
+            if (e) {
+                console.log(e);
+            }
+            cntr++;
+            // Once we are done, run the map reduce
+            if (cntr === urlsDataset.length) {
+                distribution.crawler.store.get(null, (e, v) => {
+                    let filteredKeys = v.filter(element => !isNaN(element));
+                    
+                    distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
+                        try {
+                            console.log(v)
+                
+                            // Save the output to urls.txt
+                            const urlsToSave = v.flatMap((item) => {
+                                const key = Object.keys(item)[0];
+                                return item[key];
+                            });
+        
+                            const urlsString = urlsToSave.join('\n');
+        
+                            fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsString, (err) => {
+                                if (err) {
+                                    console.error('Error writing to urls.txt:', err);
+                                    done(err);
+                                } else {
+                                    console.log('URLs saved to urls.txt');
+                                    //index phase 1
+                                    //index phase 2
+
+                                    let delCntr=0
+                                    toDelete.forEach((o) => {
+                                        distribution.crawler.store.del(o.toString(),(e,v)=>{
+                                            if(e){
+                                                console.log(o)
+                                                console.log(e)
+                                            }
+                                            delCntr++;
+                                            if (delCntr === urlsDataset.length) {
+                                                let remote = {service: 'store', method: 'del'}
+                                                //distribution.crawler.store.del('tempResults',(e,v)=>{
+                                                    distribution.crawler.comm.send(['tempResults'], remote, (e,v) =>{
+                                                        //console.log(global.crawler)
+                                                        doMapReduce()
+
+                                                    })
+                                               // })
+                                            }
+                                        })
+                                    })
+                                    //})
+                                }
+                            });
+                        } catch (e) {
+                            console.log("here")
+                            done(e);
+                        }
+                    });
+                });
+            }
+        });
+    });
+    };
+
+    doMapReduce();
+    
     });
 });

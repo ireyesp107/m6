@@ -221,13 +221,13 @@ const mr = function (config) {
           [mrService],
           remote,
           (e, v) => {
-            console.log(e);
+            //console.log(e);
             remote.method = 'map';
             global.distribution[context.gid].comm.send(
               [configuration, context],
               remote,
               (e, v) => {
-                console.log(JSON.stringify(v));
+                //console.log(JSON.stringify(v));
                 remote.method = 'shuffle';
                 global.distribution[context.gid].comm.send(
                   [configuration, context],
