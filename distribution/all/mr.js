@@ -134,6 +134,8 @@ const mr = function (config) {
               let numFinished = 0;
 
               for (let groupKey of groupedPairs.keys()) {
+                console.log(groupKey)
+                console.log("CHAY")
                 let currentGroup = groupedPairs.get(groupKey);
 
                 if (config.compact) {
