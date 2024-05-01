@@ -21,7 +21,7 @@ const memTestGroup = {};
 const outTestGroup = {};
 let uniqueKey = 0;
 let iteration = 0;
-jest.setTimeout(60000)
+jest.setTimeout(600000)
 
 
 /*
@@ -39,10 +39,10 @@ let localServer = null;
 const n1 = { ip: '127.0.0.1', port: 8421 };
 const n2 = { ip: '127.0.0.1', port: 8422 };
 const n3 = { ip: '127.0.0.1', port: 8423 };
- const n4 = { ip: '127.0.0.1', port: 8424 };
- const n5 = { ip: '127.0.0.1', port: 8425};
-  const n6 = { ip: '127.0.0.1', port: 8426 };
- const n7 = { ip: '127.0.0.1', port: 8427 };
+const n4 = { ip: '127.0.0.1', port: 8424 };
+const n5 = { ip: '127.0.0.1', port: 8425 };
+const n6 = { ip: '127.0.0.1', port: 8426 };
+const n7 = { ip: '127.0.0.1', port: 8427 };
 // const n8 = { ip: '127.0.0.1', port: 8117 };
 // const n9 = { ip: '127.0.0.1', port: 8118 };
 // const n10 = { ip: '127.0.0.1', port: 8119 };
@@ -56,10 +56,10 @@ beforeAll((done) => {
     crawlerGroup[id.getSID(n1)] = n1;
     crawlerGroup[id.getSID(n2)] = n2;
     crawlerGroup[id.getSID(n3)] = n3;
-     crawlerGroup[id.getSID(n4)] = n4;
-     crawlerGroup[id.getSID(n5)] = n5;
-     crawlerGroup[id.getSID(n6)] = n6;
-     crawlerGroup[id.getSID(n7)] = n7;
+    crawlerGroup[id.getSID(n4)] = n4;
+    crawlerGroup[id.getSID(n5)] = n5;
+    crawlerGroup[id.getSID(n6)] = n6;
+    crawlerGroup[id.getSID(n7)] = n7;
     // crawlerGroup[id.getSID(n8)] = n8;
     // crawlerGroup[id.getSID(n9)] = n9;
     // crawlerGroup[id.getSID(n10)] = n10;
@@ -98,26 +98,26 @@ beforeAll((done) => {
         distribution.local.status.spawn(n1, (e, v) => {
             distribution.local.status.spawn(n2, (e, v) => {
                 distribution.local.status.spawn(n3, (e, v) => {
-                     distribution.local.status.spawn(n4, (e, v) => {
-                         distribution.local.status.spawn(n5, (e, v) => {
-                             distribution.local.status.spawn(n6, (e, v) => {
-                                 distribution.local.status.spawn(n7, (e, v) => {
+                    distribution.local.status.spawn(n4, (e, v) => {
+                        distribution.local.status.spawn(n5, (e, v) => {
+                            distribution.local.status.spawn(n6, (e, v) => {
+                                distribution.local.status.spawn(n7, (e, v) => {
                                     //cb();
 
                                     //  distribution.local.status.spawn(n8, (e, v) => {
                                     //      distribution.local.status.spawn(n9, (e, v) => {
                                     //          distribution.local.status.spawn(n10, (e, v) => {
                                     //              distribution.local.status.spawn(n11, (e, v) => {
-                                //                     distribution.local.status.spawn(n12, (e, v) => {
-                                                         cb();
-                                //                     });
-                                                 });
-                                            });
-                                         });
-                                     });
-                                 });
-                             });
-                         });
+                                    //                     distribution.local.status.spawn(n12, (e, v) => {
+                                    cb();
+                                    //                     });
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
         //              });
         //         });
         //     });
@@ -185,40 +185,40 @@ afterAll((done) => {
         remote.node = n2;
         distribution.local.comm.send([], remote, (e, v) => {
             remote.node = n3;
-             distribution.local.comm.send([], remote, (e, v) => {
-                 remote.node = n4;
-                 distribution.local.comm.send([], remote, (e, v) => {
-                     remote.node = n5;
+            distribution.local.comm.send([], remote, (e, v) => {
+                remote.node = n4;
+                distribution.local.comm.send([], remote, (e, v) => {
+                    remote.node = n5;
                     distribution.local.comm.send([], remote, (e, v) => {
                         remote.node = n6;
                         distribution.local.comm.send([], remote, (e, v) => {
                             remote.node = n7;
-                             distribution.local.comm.send([], remote, (e, v) => {
-                        //          remote.node = n8;
-                        //          distribution.local.comm.send([], remote, (e, v) => {
-                        //              remote.node = n9;
-                        //              distribution.local.comm.send([], remote, (e, v) => {
-                        //                  remote.node = n10;
-                        //                  distribution.local.comm.send([], remote, (e, v) => {
-                        //                      remote.node = n11;
-                        //                     distribution.local.comm.send([], remote, (e, v) => {
-                        //                         remote.node = n12;
+                            distribution.local.comm.send([], remote, (e, v) => {
+                                //          remote.node = n8;
+                                //          distribution.local.comm.send([], remote, (e, v) => {
+                                //              remote.node = n9;
+                                //              distribution.local.comm.send([], remote, (e, v) => {
+                                //                  remote.node = n10;
+                                //                  distribution.local.comm.send([], remote, (e, v) => {
+                                //                      remote.node = n11;
+                                //                     distribution.local.comm.send([], remote, (e, v) => {
+                                //                         remote.node = n12;
 
-                                                distribution.local.comm.send([], remote, (e, v) => {
-                                                    localServer.close();
-                                                    done();
-                                            });
-                                            });
-                                        });
-                                    });
-                                 });
+                                distribution.local.comm.send([], remote, (e, v) => {
+                                    localServer.close();
+                                    done();
+                                });
                             });
-                         });
-                     });
-                 });
-    //          });
-    //      });
-    //  });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
+//          });
+//      });
+//  });
 // });
 
 test('all.mr:crawler!', (done) => {
@@ -316,7 +316,7 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
         // Extract URLs from the fetched HTML content using JSDOM
         function extractLinks(html, baseUrl) {
             const dom = new global.distribution.jsdom(html);
-                const links = Array.from(dom.window.document.querySelectorAll('a'))
+            const links = Array.from(dom.window.document.querySelectorAll('a'))
                 .filter((link) => {
                     // Skipping links that have no href attribute or that start with '?'
                     const href = link.href;
@@ -325,11 +325,11 @@ test('all.mr:crawler-with-urlExtraction', (done) => {
                     }
                     // Skipping the "Parent Directory" link
                     const text = link.textContent.trim();
-                    if (text === 'Parent Directory' 
-                    || text === 'books.txt'
-                    || text === 'donate-howto.txt' 
-                    || text === 'indextree.txt'
-                    || text === 'retired/') {
+                    if (text === 'Parent Directory'
+                        || text === 'books.txt'
+                        || text === 'donate-howto.txt'
+                        || text === 'indextree.txt'
+                        || text === 'retired/') {
                         return false;
                     }
                     return true;
@@ -495,7 +495,7 @@ test('all.mr:crawler-start-urltxt', (done) => {
         // Extract URLs from the fetched HTML content using JSDOM
         function extractLinks(html, baseUrl) {
             const dom = new global.distribution.jsdom(html);
-                const links = Array.from(dom.window.document.querySelectorAll('a'))
+            const links = Array.from(dom.window.document.querySelectorAll('a'))
                 .filter((link) => {
                     // Skipping links that have no href attribute or that start with '?'
                     const href = link.href;
@@ -504,11 +504,11 @@ test('all.mr:crawler-start-urltxt', (done) => {
                     }
                     // Skipping the "Parent Directory" link
                     const text = link.textContent.trim();
-                    if (text === 'Parent Directory' 
-                    || text === 'books.txt'
-                    || text === 'donate-howto.txt' 
-                    || text === 'indextree.txt'
-                    || text === 'retired/') {
+                    if (text === 'Parent Directory'
+                        || text === 'books.txt'
+                        || text === 'donate-howto.txt'
+                        || text === 'indextree.txt'
+                        || text === 'retired/') {
                         return false;
                     }
                     return true;
@@ -652,7 +652,7 @@ let currentData = []
 
 test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
     // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
-    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/',(err) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/', (err) => {
         if (err) {
             console.error('Error writing to urls.txt:', err);
             done(err);
@@ -660,205 +660,204 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
             console.log('Gutenberg homepage is saved');
         }
 
-        function checkFileEmpty(){
-        const data = fs.readFileSync(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
-        return data;
-        //return fs.readFile(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+        function checkFileEmpty() {
+            const data = fs.readFileSync(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+            return data;
+            //return fs.readFile(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
         }
 
-        
-        
-    let m1 = async (key, value) => {
-        async function get_page(url) {
-            return new Promise((resolve) => {
-                let data = '';
-                global.distribution.https.get(url, { rejectUnauthorized: false }, res => {
-                    res.on('data', chunk => { data += chunk; });
-                    res.on('end', () => { resolve(data); });
+
+
+        let m1 = async (key, value) => {
+            async function get_page(url) {
+                return new Promise((resolve) => {
+                    let data = '';
+                    global.distribution.https.get(url, { rejectUnauthorized: false }, res => {
+                        res.on('data', chunk => { data += chunk; });
+                        res.on('end', () => { resolve(data); });
+                    });
                 });
-            });
-        }        
-
-        try {
-        if (!value) {
-            let err = {}
-            err[key] = value
-            return err;
-        }
-
-        //const response = await global.fetch(value);
-
-         //const body = await response.text();
-
-        // Extract URLs from the fetched HTML content using JSDOM
-        function extractLinks(html, baseUrl) {
-            const dom = new global.distribution.jsdom(html);
-                const links = Array.from(dom.window.document.querySelectorAll('a'))
-
-                .filter((link) => {
-                    // Skipping links that have no href attribute or that start with '?'
-                    const href = link.href;
-                    if (href === '' || href.startsWith('?')) {
-                        return false;
-                    }
-                    // Skipping the "Parent Directory" link
-                    const text = link.textContent.trim();
-                    if (text === 'Parent Directory' 
-                    || text === 'books.txt'
-                    || text === 'donate-howto.txt' 
-                    || text === 'indextree.txt'
-                    || text === 'retired/') {
-                        return false;
-                    }
-                    return true;
-                })
-                .map((link) => {
-                    const href = link.href;
-                    // Resolve relative URLs to absolute URLs
-                    if (href.startsWith('/')) {
-                        return new URL(href, baseUrl).href;
-                    } else {
-                        return new URL(href, `${baseUrl}`).href;
-                    }
-                });
-            return links;
-        }
-
-        const body = await get_page(value);
-
-        //const lowerCaseBody = global.distribution.convert(body).toLowerCase();
-        //console.log(lowerCaseBody)
-        // Extract URLs from the content
-        const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
-    
-        let out = {};
-        out['Brown'] = {extractedUrls: extractedUrls};
-        //console.log(out);
-
-        // let extractedUrls = extractLinks(body, value);
-        // extractedUrls = extractedUrls.filter(url => url !== undefined);
-
-        // let out = {};
-        // out['Brown'] = {extractedUrls: extractedUrls };
-
-        //global.distribution.crawler.store.put(out[value], value, (e, v) => { });
-        return out;
-    } catch (e) {
-        console.error('Error fetching data for ' + value, e);
-
-        return {}
-    }
-    };
-
-    let r1 = (key, values) => {
-
-        let out = {};
-        // Combine the extracted URLs from all the values
-        //values = values.filter(arrayValue => arrayValue.filter(value => 'extractedUrls' in value ).length > 0)
-        //let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
-        let allExtractedUrls = values.flatMap((value) => value ? value.extractedUrls : []);
-
-        let uniqueUrls = [...new Set(allExtractedUrls)];
-        out[key] = uniqueUrls;
-        return out;
-    };
-    
-    /* Now we do the same thing but on the cluster */
-    const doMapReduce = (cb) => {
-
-        let data = checkFileEmpty().trim()
-        if(iteration > 0 || data === ''){
-            done();
-            return;
-        }
-        iteration++;
-
-    // We send the dataset to the cluster
-    let urlsDataset = ''
-    urlsDataset = data.split('\n');
-    //currentData = data.split('\n');
-
-    
-    let cntr=0
-    let toDelete = []
-    urlsDataset.forEach((o) => {
-        //console.log(o)
-        uniqueKey+=1
-        toDelete.push(uniqueKey)
-         distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
-            if (e) {
-                console.log(e);
-                done(e);
             }
-            cntr++;
-            // Once we are done, run the map reduce
-            if (cntr === urlsDataset.length) {
-                distribution.crawler.store.get(null, (e, v) => {
 
-                    let filteredKeys = v.filter(element => !isNaN(element));
-                    
-                    distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
-                        try {
-                            console.log(v)
-                
-                            // Save the output to urls.txt
-                            const urlsToSave = v.flatMap((item) => {
-                                const key = Object.keys(item)[0];
-                                return item[key];
-                            });
-        
-                            const urlsString = urlsToSave.join('\n');
-        
-                            fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsString, (err) => {
-                                if (err) {
-                                    console.error('Error writing to urls.txt:', err);
-                                    done(err);
-                                } else {
-                                    console.log('URLs saved to urls.txt');
-                                    //index phase 1
+            try {
+                if (!value) {
+                    let err = {}
+                    err['Brown'] = value
+                    return err;
+                }
 
-                                    //index phase 2
+                //const response = await global.fetch(value);
 
-                                     let delCntr=0
-                                     distribution.crawler.store.get(null, (e, filesToDelete) => {
+                //const body = await response.text();
 
-                                        filesToDelete = filesToDelete.filter(key => key !== 'tempResults')
-                                        filesToDelete.forEach((o) => {
-                                        distribution.crawler.store.del(o,(e,v)=>{
-                                            delCntr++;
-                                            if(e){
-                                                console.log(o)
-                                                console.log(e)
-                                            }
+                // Extract URLs from the fetched HTML content using JSDOM
+                function extractLinks(html, baseUrl) {
+                    const dom = new global.distribution.jsdom(html);
+                    const links = Array.from(dom.window.document.querySelectorAll('a'))
 
-                                            //delCntr++;
-                                            if (delCntr === filesToDelete.length) {
-                                                let remote = {service: 'store', method: 'del'}
-                                                    distribution.crawler.comm.send([{key:'tempResults', gid: 'crawler'}], remote, (e,v) =>{
-                                                        doMapReduce()
+                        .filter((link) => {
+                            // Skipping links that have no href attribute or that start with '?'
+                            const href = link.href;
+                            if (href === '' || href.startsWith('?')) {
+                                return false;
+                            }
+                            // Skipping the "Parent Directory" link
+                            const text = link.textContent.trim();
+                            if (text === 'Parent Directory'
+                                || text === 'books.txt'
+                                || text === 'donate-howto.txt'
+                                || text === 'indextree.txt'
+                                || text === 'retired/') {
+                                return false;
+                            }
+                            return true;
+                        })
+                        .map((link) => {
+                            const href = link.href;
+                            // Resolve relative URLs to absolute URLs
+                            if (href.startsWith('/')) {
+                                return new URL(href, baseUrl).href;
+                            } else {
+                                return new URL(href, `${baseUrl}`).href;
+                            }
+                        });
+                    return links;
+                }
 
+                const body = await get_page(value);
+
+                //const lowerCaseBody = global.distribution.convert(body).toLowerCase();
+                //console.log(lowerCaseBody)
+                // Extract URLs from the content
+                const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
+
+                let out = {};
+                out['Brown'] = extractedUrls ;
+                //console.log(out);
+
+                // let extractedUrls = extractLinks(body, value);
+                // extractedUrls = extractedUrls.filter(url => url !== undefined);
+
+                // let out = {};
+                // out['Brown'] = {extractedUrls: extractedUrls };
+
+                //global.distribution.crawler.store.put(out[value], value, (e, v) => { });
+                return out;
+            } catch (e) {
+                console.error('Error fetching data for ' + value, e);
+
+                return {}
+            }
+        };
+
+        let r1 = (key, values) => {
+
+            let out = {};
+            // Combine the extracted URLs from all the values
+            //values = values.filter(arrayValue => arrayValue.filter(value => 'extractedUrls' in value ).length > 0)
+            //let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
+            //let allExtractedUrls = values.flatMap((value) => value ? value.extractedUrls : []);
+
+            //let uniqueUrls = [...new Set(allExtractedUrls)];
+            out[key] = values.flat();
+            return out;
+        };
+
+        /* Now we do the same thing but on the cluster */
+        const doMapReduce = (cb) => {
+
+            let data = checkFileEmpty().trim()
+            if (iteration > 3 || data === '') {
+                done();
+                return;
+            }
+            iteration++;
+
+            // We send the dataset to the cluster
+            let urlsDataset = ''
+            urlsDataset = data.split('\n');
+            //currentData = data.split('\n');
+
+            let cntr = 0
+            let toDelete = []
+            urlsDataset.forEach((o) => {
+                //console.log(o)
+                uniqueKey += 1
+                toDelete.push(uniqueKey)
+                distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
+                    if (e) {
+                        console.log(e);
+                        done(e);
+                    }
+                    cntr++;
+                    // Once we are done, run the map reduce
+                    if (cntr === urlsDataset.length) {
+                        distribution.crawler.store.get(null, (e, v) => {
+
+                            let filteredKeys = v.filter(element => !isNaN(element));
+
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
+                                try {
+                                    console.log(v)
+
+                                    // Save the output to urls.txt
+                                    const urlsToSave = v.flatMap((item) => {
+                                        const key = Object.keys(item)[0];
+                                        return item[key];
+                                    });
+
+                                    const urlsString = urlsToSave.join('\n');
+
+                                    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsString, (err) => {
+                                        if (err) {
+                                            console.error('Error writing to urls.txt:', err);
+                                            done(err);
+                                        } else {
+                                            console.log('URLs saved to urls.txt');
+                                            //index phase 1
+
+                                            //index phase 2
+
+                                            let delCntr = 0
+                                            distribution.crawler.store.get(null, (e, filesToDelete) => {
+
+                                                filesToDelete = filesToDelete.filter(key => key !== 'tempResults')
+                                                filesToDelete.forEach((o) => {
+                                                    distribution.crawler.store.del(o, (e, v) => {
+                                                        delCntr++;
+                                                        if (e) {
+                                                            console.log(o)
+                                                            console.log(e)
+                                                        }
+
+                                                        //delCntr++;
+                                                        if (delCntr === filesToDelete.length) {
+                                                            let remote = { service: 'store', method: 'del' }
+                                                            distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                doMapReduce()
+
+                                                            })
+                                                        }
                                                     })
-                                            }
-                                        })
-                                        })
-                                    })
+                                                })
+                                            })
 
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.log("here")
+                                    done(e);
                                 }
                             });
-                        } catch (e) {
-                            console.log("here")
-                            done(e);
-                        }
-                    });
-                //}
+                            //}
+                        });
+
+                    }
                 });
+            });
+        };
 
-            }
-        });
-    });
-    };
+        doMapReduce();
 
-    doMapReduce();
-    
     });
 });
