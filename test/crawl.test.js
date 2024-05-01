@@ -669,6 +669,15 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
         
         
     let m1 = async (key, value) => {
+        async function get_page(url) {
+            return new Promise((resolve) => {
+                let data = '';
+                global.distribution.https.get(url, { rejectUnauthorized: false }, res => {
+                    res.on('data', chunk => { data += chunk; });
+                    res.on('end', () => { resolve(data); });
+                });
+            });
+        }        
 
         try {
         if (!value) {
@@ -677,13 +686,15 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
             return err;
         }
 
-        const response = await global.fetch(value);
-        const body = await response.text();
+        //const response = await global.fetch(value);
+
+         //const body = await response.text();
 
         // Extract URLs from the fetched HTML content using JSDOM
         function extractLinks(html, baseUrl) {
             const dom = new global.distribution.jsdom(html);
                 const links = Array.from(dom.window.document.querySelectorAll('a'))
+
                 .filter((link) => {
                     // Skipping links that have no href attribute or that start with '?'
                     const href = link.href;
@@ -713,10 +724,22 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
             return links;
         }
 
-        const extractedUrls = extractLinks(body, value);
+        const body = await get_page(value);
 
+        //const lowerCaseBody = global.distribution.convert(body).toLowerCase();
+        //console.log(lowerCaseBody)
+        // Extract URLs from the content
+        const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
+    
         let out = {};
-        out['Brown'] = {extractedUrls: extractedUrls };
+        out['Brown'] = {extractedUrls: extractedUrls};
+        //console.log(out);
+
+        // let extractedUrls = extractLinks(body, value);
+        // extractedUrls = extractedUrls.filter(url => url !== undefined);
+
+        // let out = {};
+        // out['Brown'] = {extractedUrls: extractedUrls };
 
         //global.distribution.crawler.store.put(out[value], value, (e, v) => { });
         return out;
@@ -728,10 +751,13 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
     };
 
     let r1 = (key, values) => {
+
         let out = {};
         // Combine the extracted URLs from all the values
         //values = values.filter(arrayValue => arrayValue.filter(value => 'extractedUrls' in value ).length > 0)
-        let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
+        //let allExtractedUrls = values.flatMap((value) => value.extractedUrls);
+        let allExtractedUrls = values.flatMap((value) => value ? value.extractedUrls : []);
+
         let uniqueUrls = [...new Set(allExtractedUrls)];
         out[key] = uniqueUrls;
         return out;
@@ -741,7 +767,7 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds', (done) => {
     const doMapReduce = (cb) => {
 
         let data = checkFileEmpty().trim()
-        if(iteration > 3 || data === ''){
+        if(iteration > 0 || data === ''){
             done();
             return;
         }
