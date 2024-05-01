@@ -1,11 +1,4 @@
-FROM amazonlinux:2
-
-# Add the NodeSource repository for Node.js
-RUN curl -sL https://rpm.nodesource.com/setup_14.x | bash -
-
-# Install Node.js, npm, and git
-RUN yum update -y && \
-    yum install -y nodejs npm git
+FROM node:14
 
 # Set the working directory
 WORKDIR /app
