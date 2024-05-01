@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN sudo npm install
+RUN npm install
 
 # Copy the application code
 COPY . .
