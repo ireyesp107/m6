@@ -21,15 +21,6 @@ const fs = require('fs');
 const path = require('path');
 
 global.fetch = require('node-fetch');
-const crawlerGroup = {};
-const urlExtractGroup = {};
-const stringMatchGroup = {};
-const invertGroup = {};
-const reverseLinkGroup = {};
-
-const compactTestGroup = {};
-const memTestGroup = {};
-const outTestGroup = {};
 
 /*
    This hack is necessary since we can not

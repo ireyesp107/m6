@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 app.use(express.json());
-const id = distribution.util.id;
 
 const crawlerGroup = {};
 const urlExtractGroup = {};
@@ -12,9 +11,13 @@ const compactTestGroup = {};
 const memTestGroup = {};
 const outTestGroup = {};
 
+let nodeCounter = 0;
+
 app.post('/nodes', (req, res) => {
+    console.log('Request received:', req.body);
     const newNode = req.body;
-    const nodeId = id.getSID(newNode);
+    // const nodeId = id.getSID(newNode);
+    const nodeId = `node_${nodeCounter++}`;
     crawlerGroup[nodeId] = newNode;
     urlExtractGroup[nodeId] = newNode;
     stringMatchGroup[nodeId] = newNode;
