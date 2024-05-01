@@ -1,7 +1,7 @@
 FROM amazonlinux:2
 
-RUN sudo yum update -y && \
-    sudo yum install -y nodejs npm git
+RUN yum update -y && \
+    yum install -y nodejs npm git
 
 # Set the working directory
 WORKDIR /app
