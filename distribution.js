@@ -47,10 +47,16 @@ global.distribution = distribution;
 global.distribution.convert = require('html-to-text').convert;
 global.distribution.fs = require('fs');
 global.distribution.path = require('path');
-global.distribution.testFilesPath = '/usr/src/app/m6/testFiles';
+global.fetch = require('node-fetch');
+global.distribution.https = require('node:https');
 
-// global.distribution.jsdom = require('jsdom').JSDOM;
-// global.distribution.url = require('url').URL;
+// global.distribution.testFilesPath = '/usr/src/app/m6/testFiles';
+global.distribution.testFilesPath = global.distribution.path.resolve(__dirname, 'testFiles');
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
+
+
+global.distribution.jsdom = require('jsdom').JSDOM;
+global.distribution.url = require('url').URL;
 
 distribution['all'] = {};
 distribution['all'].status =
