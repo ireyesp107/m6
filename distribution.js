@@ -49,6 +49,7 @@ global.distribution.fs = require('fs');
 global.distribution.path = require('path');
 global.fetch = require('node-fetch');
 global.distribution.https = require('node:https');
+global.distribution.natural = require('natural')
 
 // global.distribution.testFilesPath = '/usr/src/app/m6/testFiles';
 global.distribution.testFilesPath = global.distribution.path.resolve(__dirname, 'testFiles');

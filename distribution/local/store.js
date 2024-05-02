@@ -52,7 +52,7 @@ store.get = function(key, cb) {
         }
       });
     } else {
-      cb(new Error('key does not exist'));
+      cb(new Error('Tried to get but key does not exist' + JSON.stringify(key)));
     }
   }
 };
@@ -130,23 +130,25 @@ store.del = function(key, cb) {
           return;
         }
 
-        const dirKey = path.join(dir, actualGid);
-        fs.readdir(dirKey, (err, files) => {
-          if (err) {
-            cb(err);
-            return;
-          }
+        cb(null, obj);
 
-          if (files.length === 0) {
-            fs.rmdirSync(dirKey);
-          }
+        // const dirKey = path.join(dir, actualGid);
+        // fs.readdir(dirKey, (err, files) => {
+        //   if (err) {
+        //     cb(err);
+        //     return;
+        //   }
 
-          cb(null, obj);
-        });
+        //   if (files.length === 0) {
+        //     fs.rmdirSync(dirKey);
+        //   }
+
+         
+        // });
       });
     });
   } else {
-    cb(new Error('key does not exist'));
+    cb(new Error('tried to delete but key does not exist' + JSON.stringify(key)));
   }
 };
 
