@@ -29,18 +29,18 @@ app.post('/nodes', (req, res) => {
     res.status(200).json({ message: `Node ${nodeId} added to all groups` });
 });
 
-const server = app.listen(3000, () => {
+const server = app.listen(3000, "0.0.0.0",() => {
     console.log('Express server is running on port 3000');
 });
 
 module.exports = {
     server,
-    crawlerGroup,
-    urlExtractGroup,
-    stringMatchGroup,
-    invertGroup,
-    reverseLinkGroup,
-    compactTestGroup,
-    memTestGroup,
-    outTestGroup
+    getCrawlerGroup: () => crawlerGroup,
+    getUrlExtractGroup: () => urlExtractGroup,
+    getStringMatchGroup: () => stringMatchGroup,
+    getInvertGroup: () => invertGroup,
+    getReverseLinkGroup: () => reverseLinkGroup,
+    getCompactTestGroup: () => compactTestGroup,
+    getMemTestGroup: () => memTestGroup,
+    getOutTestGroup: () => outTestGroup
 };
