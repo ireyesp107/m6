@@ -1,4 +1,4 @@
-global.nodeConfig = { ip: '127.0.0.1', port: 7291 };
+global.nodeConfig = { ip: '127.0.0.1', port: 7491 };
 const { Console } = require('console');
 const distribution = require('../distribution');
 const id = distribution.util.id;
@@ -41,15 +41,15 @@ let localServer = null;
     The local node will be the orchestrator.
 */
 
-const n1 = { ip: '127.0.0.1', port: 7922 };
-const n2 = { ip: '127.0.0.1', port: 7923 };
-const n3 = { ip: '127.0.0.1', port: 7924 };
-const n4 = { ip: '127.0.0.1', port: 7925 };
-const n5 = { ip: '127.0.0.1', port: 7926 };
-const n6 = { ip: '127.0.0.1', port: 7927 };
-const n7 = { ip: '127.0.0.1', port: 7928 };
-const n8 = { ip: '127.0.0.1', port: 7929 };
-const n9 = { ip: '127.0.0.1', port: 7920 };
+const n1 = { ip: '127.0.0.1', port: 7932 };
+const n2 = { ip: '127.0.0.1', port: 7933 };
+const n3 = { ip: '127.0.0.1', port: 7934 };
+const n4 = { ip: '127.0.0.1', port: 7935 };
+const n5 = { ip: '127.0.0.1', port: 7936 };
+const n6 = { ip: '127.0.0.1', port: 7937 };
+const n7 = { ip: '127.0.0.1', port: 7938 };
+const n8 = { ip: '127.0.0.1', port: 7939 };
+const n9 = { ip: '127.0.0.1', port: 7930 };
 // const n10 = { ip: '127.0.0.1', port: 8119 };
 // const n11 = { ip: '127.0.0.1', port: 8120 };
 // const n12 = { ip: '127.0.0.1', port: 8121 };
@@ -1688,9 +1688,9 @@ test('Crawler merged!', (done) => {
                                                                         uniqueMap.set(item.url, item);
                                                                     });
     
-                                                                    const uniqueArray = Array.from(uniqueMap.values());
+                                                                    let uniqueArray = Array.from(uniqueMap.values());
     
-                                                                    uniqueArray.sort((a, b) => b.count - a.count);
+                                                                    uniqueArray = uniqueArray.sort((a, b) => b.count - a.count).slice(0,10);
                                                                     return uniqueArray;
                                                                 }
     
@@ -1762,7 +1762,7 @@ test('Crawler merged!', (done) => {
 
 test('Crawler merged! 2', (done) => {
     // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
-    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/2/', (err) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/5/', (err) => {
         if (err) {
             console.error('Error writing to urls.txt:', err);
             done(err);
@@ -2015,9 +2015,9 @@ test('Crawler merged! 2', (done) => {
                                                                         uniqueMap.set(item.url, item);
                                                                     });
     
-                                                                    const uniqueArray = Array.from(uniqueMap.values());
+                                                                    let uniqueArray = Array.from(uniqueMap.values());
     
-                                                                    uniqueArray.sort((a, b) => b.count - a.count);
+                                                                    uniqueArray = uniqueArray.sort((a, b) => b.count - a.count).slice(0,10);
                                                                     return uniqueArray;
                                                                 }
     
@@ -2085,4 +2085,30 @@ test('Crawler merged! 2', (done) => {
 
         doMapReduce();
     });
+})
+
+
+test('query', (done) => {
+    function findInBatch(queryWord, batch) {
+        console.log("CHAY")
+        console.log(queryWord)
+        if (batch[queryWord]) {
+            return batch[queryWord]
+        } else {
+            return 'no results found'
+        }
+    }
+
+    let query = "project"
+    let queryBatch = query.slice(0,2)
+
+    distribution.invertIndex.store.get(queryBatch, (e,v) => {
+        console.log(v)
+        expect(e).toBeFalsy();
+        let result = findInBatch(query, v)
+        console.log(result)
+
+        expect(Array.isArray(result)).toBe(true);
+        done();
+    })
 })
