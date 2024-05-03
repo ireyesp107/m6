@@ -38,9 +38,6 @@ const mr = function(config) {
                             config.map(localKey, localValue))
                             .then((response) => {
                               tempValues[localKey] = response;
-                              console.log('here')
-                              console.log(numKeys)
-                              console.log(Object.keys(tempValues).length)
                               if (numKeys === Object.keys(tempValues).length) {
                                 global.distribution
                                     .local[config.typeStorage].put(
@@ -48,7 +45,6 @@ const mr = function(config) {
                                         {key: 'tempResults',
                                           gid: context.gid},
                                         (e, v) => {
-                                          console.log(JSON.stringify(global.nodeConfig) + 'done with map')
                                           cb(null, tempValues);
                                         });
                               }
@@ -188,25 +184,21 @@ const mr = function(config) {
           [mrService],
           remote,
           (e, v) => {
-            console.log(e);
             remote.method = 'map';
             global.distribution[context.gid].comm.send(
                 [configuration, context],
                 remote,
                 (e, v) => {
-                  console.log(JSON.stringify(v));
                   remote.method = 'shuffle';
                   global.distribution[context.gid].comm.send(
                       [configuration, context],
                       remote,
                       (e, shuffleValues) => {
-                        console.log(e);
                         const allKeys =
                         new Set(Object.values(shuffleValues).flat());
                         if (allKeys.has(undefined)) {
                           allKeys.delete(undefined);
                         }
-                        console.log(allKeys);
                         remote.method = 'reduce';
                         global.distribution[context.gid].comm.send(
                             [configuration, context],
@@ -217,7 +209,6 @@ const mr = function(config) {
                                   [mrService],
                                   remote,
                                   (e, v) => {
-                                    console.log(e);
                                     let returnArray = [];
 
                                     if (configuration.out) {
