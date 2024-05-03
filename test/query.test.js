@@ -86,40 +86,43 @@ afterAll((done) => {
   });
 });
 
-test('all.mr:query', (done) => {
-  let dataset = [
-    {
-      '000': 'https://pvac.xyz/',
-    },
-    {
-      '111': 'https://cv.btxx.org/',
-    },
-    {
-      '222': 'https://rideout.net/',
-    },
-    {
-      '333': 'https://t0.vc/',
-    },
-  ];
+function findInBatch(queryWord, batch) {
+  if (batch[queryWord]) {
+      return batch[queryWord]
+  } else {
+      return 'no results found'
+  }
+}
 
-  let expected = [
-    {
-      'https://pvac.xyz/': 'stored',
-    },
-    { 'https://cv.btxx.org/': 'stored' },
-    { 'https://rideout.net/': 'stored' },
-    { 'https://t0.vc/': 'stored' },
-  ];
-  //query is trigram
-  // convert trigram to twoletterquery 
-  distribution.query.store.get(twoLetterQuery, (e, v) => {
-    // v is a batch object
+function processQuery(query){
+  const tokenizer = new global.distribution.natural.WordTokenizer();
+  const stemmedWords = tokenizer.tokenize(text).map(word => global.distribution.natural.PorterStemmer.stem(word).replace(/[^a-zA-Z0-9]/g, ''));
+  const stopWordsFilePath = global.distribution.path.join(
+    global.distribution.testFilesPath,
+    'stopWords.txt');
+  const stopWordsData = global.distribution.fs.readFileSync(stopWordsFilePath, { encoding: 'utf8' });
+  const stopWords = stopWordsData.split('\n').map(word => word.trim());
+  const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
 
-    let results = v[santizedQuery]
-    console.log(results)
+  if (filteredWords.length > 0) {
+    return filteredWords[0];
+  } else {
+    return '';
+  }
+}
 
+test('query basic', (done) => {
+    let query = "project"
+    let processedQuery = processQuery(query)
+    let queryBatch = query.slice(0,2)
 
+    distribution.invertIndex.store.get(queryBatch, (e,v) => {
+        console.log(v)
+        expect(e).toBeFalsy();
+        let result = findInBatch(processedQuery, v)
+        console.log(result)
 
-  })
-
+        expect(Array.isArray(result)).toBe(true);
+        done();
+    })
 })
