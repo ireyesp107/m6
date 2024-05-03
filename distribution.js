@@ -53,7 +53,6 @@ global.distribution.natural = require('natural')
 
 // global.distribution.testFilesPath = '/usr/src/app/m6/testFiles';
 global.distribution.testFilesPath = global.distribution.path.resolve(__dirname, 'testFiles');
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0;
 
 
 global.distribution.jsdom = require('jsdom').JSDOM;

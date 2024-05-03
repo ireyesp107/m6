@@ -1,4 +1,4 @@
-global.nodeConfig = { ip: '127.0.0.1', port: 7081 };
+global.nodeConfig = { ip: '127.0.0.1', port: 7291 };
 const { Console } = require('console');
 const distribution = require('../distribution');
 const id = distribution.util.id;
@@ -26,7 +26,7 @@ const memTestGroup = {};
 const outTestGroup = {};
 let uniqueKey = 0;
 let iteration = 0;
-jest.setTimeout(60000)
+jest.setTimeout(6000000)
 
 
 /*
@@ -41,15 +41,15 @@ let localServer = null;
     The local node will be the orchestrator.
 */
 
-const n1 = { ip: '127.0.0.1', port: 7812 };
-const n2 = { ip: '127.0.0.1', port: 7813 };
-const n3 = { ip: '127.0.0.1', port: 7824 };
-const n4 = { ip: '127.0.0.1', port: 7815 };
-const n5 = { ip: '127.0.0.1', port: 7816 };
-const n6 = { ip: '127.0.0.1', port: 7817 };
-const n7 = { ip: '127.0.0.1', port: 7818 };
-const n8 = { ip: '127.0.0.1', port: 7819 };
-const n9 = { ip: '127.0.0.1', port: 7820 };
+const n1 = { ip: '127.0.0.1', port: 7922 };
+const n2 = { ip: '127.0.0.1', port: 7923 };
+const n3 = { ip: '127.0.0.1', port: 7924 };
+const n4 = { ip: '127.0.0.1', port: 7925 };
+const n5 = { ip: '127.0.0.1', port: 7926 };
+const n6 = { ip: '127.0.0.1', port: 7927 };
+const n7 = { ip: '127.0.0.1', port: 7928 };
+const n8 = { ip: '127.0.0.1', port: 7929 };
+const n9 = { ip: '127.0.0.1', port: 7920 };
 // const n10 = { ip: '127.0.0.1', port: 8119 };
 // const n11 = { ip: '127.0.0.1', port: 8120 };
 // const n12 = { ip: '127.0.0.1', port: 8121 };
@@ -160,10 +160,10 @@ beforeAll((done) => {
         startNodes(() => {
             groupsTemplate(crawlerConfig).put(
                 crawlerConfig, crawlerGroup, (e, v) => {
-                    const indexConfig = { gid: 'index' };
+                    const indexConfig = { gid: 'index'};
                     groupsTemplate(indexConfig).put(
                         indexConfig, indexGroup, (e, v) => {
-                    const indexDataConfig = { gid: 'indexData', hash: id.consistentHash  };
+                    const indexDataConfig = { gid: 'indexData' };
                     groupsTemplate(indexDataConfig).put(
                         indexDataConfig, indexDataGroup, (e, v) => {
                     const invertIndexConfig = { gid: 'invertIndex', hash: id.consistentHash };
@@ -1012,7 +1012,7 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
 
 test('Crawler we are going to use', (done) => {
     // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
-    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/1/', (err) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/2/2/2/2/', (err) => {
         if (err) {
             console.error('Error writing to urls.txt:', err);
             done(err);
@@ -1432,3 +1432,657 @@ test('Crawler we are going to use', (done) => {
         doMapReduce();
     });
 });
+
+test('Crawler merged!', (done) => {
+    // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/1/', (err) => {
+        if (err) {
+            console.error('Error writing to urls.txt:', err);
+            done(err);
+        } else {
+            console.log('Gutenberg homepage is saved');
+        }
+
+        function checkFileEmpty() {
+            const data = fs.readFileSync(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+            return data;
+            //return fs.readFile(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+        }
+
+        let m1 = async (key, value) => {
+            async function get_page(url) {
+                return new Promise((resolve) => {
+                    let data = '';
+                    global.distribution.https.get(url, { rejectUnauthorized: false }, res => {
+                        res.on('data', chunk => { data += chunk; });
+                        res.on('end', () => { resolve(data); });
+                    });
+                });
+            }
+
+            try {
+                if (!value) {
+                    let err = {}
+                    err['Brown'] = value
+                    return err;
+                }
+
+                function extractLinks(html, baseUrl) {
+                    const dom = new global.distribution.jsdom(html);
+                    const links = Array.from(dom.window.document.querySelectorAll('a'))
+
+                        .filter((link) => {
+                            // Skipping links that have no href attribute or that start with '?'
+                            const href = link.href;
+                            if (href === '' || href.startsWith('?')) {
+                                return false;
+                            }
+                            // Skipping the "Parent Directory" link
+                            const text = link.textContent.trim();
+                            if (text === 'Parent Directory'
+                                || text === 'books.txt'
+                                || text === 'donate-howto.txt'
+                                || text === 'indextree.txt'
+                                || text === 'retired/') {
+                                return false;
+                            }
+                            return true;
+                        })
+                        .map((link) => {
+                            const href = link.href;
+                            // Resolve relative URLs to absolute URLs
+                            if (href.startsWith('/')) {
+                                return new URL(href, baseUrl).href;
+                            } else {
+                                return new URL(href, `${baseUrl}`).href;
+                            }
+                        });
+                    return links;
+                }
+
+                const body = await get_page(value);
+
+                //console.log(lowerCaseBody)
+                // Extract URLs from the content
+                const extractedUrls = extractLinks(body, value).filter(url => url !== undefined).join('\n');
+
+                const tempUrlsFilePath = global.distribution.path.join(
+                    global.distribution.testFilesPath,
+                    'tempUrls.txt');
+                if (extractedUrls.length > 0) {
+                    global.distribution.fs.appendFileSync(tempUrlsFilePath, extractedUrls + '\n')
+                }
+
+                function stemWords(text) {
+                    const tokenizer = new global.distribution.natural.WordTokenizer();
+                    const stemmedWords = tokenizer.tokenize(text).map(word => global.distribution.natural.PorterStemmer.stem(word).replace(/[^a-zA-Z0-9]/g, ''));
+                    return stemmedWords;
+                }
+
+                function countWords(words) {
+                    const counts = {};
+
+                    words.forEach(word => {
+                        if (word in counts) {
+                            counts[word] += 1; // Increment the count if the word exists
+                        } else {
+                            counts[word] = 1; // Initialize count if the word is new
+                        }
+                    });
+
+                    const result = Object.keys(counts).map(key => ({
+                        count: counts[key],
+                        word: key
+                    }));
+
+                    result.sort((a, b) => b.count - a.count);
+
+                    const top100 = result.slice(0, 100);
+
+                    return top100;
+                }
+
+                function groupWordsByFirstLetter(wordCounts, url) {
+                    const grouped = {};
+
+                    wordCounts.forEach(item => {
+                        // Extract the first letter of the word
+                        const firstTwoLetters = item.word.slice(0, 2);
+
+                        // Initialize the array if it does not exist
+                        if (!grouped[firstTwoLetters]) {
+                            grouped[firstTwoLetters] = [];
+                        }
+
+                        item['url'] = url;
+
+                        // Push the current item to the appropriate group
+                        grouped[firstTwoLetters].push(item);
+                    });
+
+                    const groupedArray = Object.keys(grouped).map(letter => ({
+                        [letter]: grouped[letter]
+                    }));
+
+                    return groupedArray;
+                }
+
+                const currURL = value;
+                const text = global.distribution.convert(body).toLowerCase()
+                const stemmedWords = stemWords(text)
+                const stopWordsFilePath = global.distribution.path.join(
+                    global.distribution.testFilesPath,
+                    'stopWords.txt');
+                const stopWordsData = global.distribution.fs.readFileSync(stopWordsFilePath, { encoding: 'utf8' });
+                const stopWords = stopWordsData.split('\n').map(word => word.trim());
+                const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
+
+                let wordCounts = countWords(filteredWords);
+                let groupedWords = groupWordsByFirstLetter(wordCounts, currURL)
+                let out = groupedWords;
+
+                console.log('done with: ' + key + ' ' + value + ', node: ' + JSON.stringify(global.nodeConfig))
+                return out;
+            }
+            catch (e) {
+                console.error('Error fetching data for ' + value, e);
+
+                return {}
+            }
+
+
+        };
+
+        let r1 = (key, values) => {
+            function groupWords(words) {
+                const groupedLetters = {};
+
+                words.forEach(wordItem => {
+                    if(wordItem && wordItem['word']) {
+                    const word = wordItem.word;
+
+                    if (!groupedLetters[word]) {
+                        groupedLetters[word] = [];
+                    }
+                    
+
+                    if (Array.isArray(groupedLetters[word])) {
+                        delete wordItem.word;
+                        groupedLetters[word].push(wordItem)
+                    }
+                    
+                }
+                });
+
+                return groupedLetters;
+            }
+
+            let out = {};
+            out[key] = groupWords(values.flat());
+            return out;
+        };
+
+
+        /* Now we do the same thing but on the cluster */
+        const doMapReduce = (cb) => {
+
+            let data = checkFileEmpty().trim()
+            if (iteration > 3 || data === '') {
+                done();
+                return;
+            }
+            iteration++;
+
+            // We send the dataset to the cluster
+            let urlsDataset = ''
+            urlsDataset = data.split('\n');
+            //currentData = data.split('\n');
+
+            let cntr = 0
+            let toDelete = []
+            urlsDataset.forEach((o) => {
+                //console.log(o)
+                uniqueKey += 1
+                toDelete.push(uniqueKey)
+                distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
+                    if (e) {
+                        console.log(e);
+                        done(e);
+                    }
+                    cntr++;
+                    // Once we are done, run the map reduce
+                    if (cntr === urlsDataset.length) {
+                        distribution.crawler.store.get(null, (e, v) => {
+
+                            let filteredKeys = v.filter(element => !isNaN(element));
+
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true }, (e, kvPairs) => {
+                                try {
+                                    // Save the output to urls.txt
+
+                                    let urlsToSave = fs.readFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), { encoding: 'utf8' })
+                                    fs.writeFile(path.join(__dirname, '../testFiles/tempUrls.txt'), '', (err) => {
+                                        fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsToSave, (err) => {
+                                            if (err) {
+                                                console.error('Error writing to urls.txt:', err);
+                                                done(err);
+                                            } else {
+                                                let numPuts = 0;
+                                                let numData = kvPairs.length
+                                                kvPairs.forEach((firstTwoLetterObject) => {
+                                                    let key = Object.keys(firstTwoLetterObject)[0];
+                                                    let newBatch = Object.values(firstTwoLetterObject)[0]
+                                                    let putBatch = newBatch
+                                                    distribution.invertIndex.store.get(key, (e, existingBatch) => {
+                                                        // merge existing Batch
+                                                        if (!e) {
+                                                            function mergeWordBatches(obj1, obj2) {
+                                                                const mergedResult = {};
+    
+                                                                function mergeSort(arr1, arr2) {
+                                                                    const mergedArray = arr1.concat(arr2);
+    
+                                                                    const uniqueMap = new Map();
+    
+                                                                    mergedArray.forEach(item => {
+                                                                        uniqueMap.set(item.url, item);
+                                                                    });
+    
+                                                                    const uniqueArray = Array.from(uniqueMap.values());
+    
+                                                                    uniqueArray.sort((a, b) => b.count - a.count);
+                                                                    return uniqueArray;
+                                                                }
+    
+                                                                const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+    
+                                                                allKeys.forEach(key => {
+                                                                    const arrayFromObj1 = obj1[key] || [];
+                                                                    const arrayFromObj2 = obj2[key] || [];
+                                                                    mergedResult[key] = mergeSort(arrayFromObj1, arrayFromObj2);
+                                                                });
+    
+                                                                return mergedResult;
+                                                            }
+    
+                                                            putBatch = mergeWordBatches(newBatch, existingBatch);
+                                                        }
+    
+                                                        distribution.invertIndex.store.put(putBatch, key, (e, _) => {
+                                                            if (e) {
+                                                                done(e)
+                                                            } else {
+                                                                numPuts++;
+                                                                if (numPuts === numData) {
+                                                                    // All kv pairs have been merged
+                                                                    // delete all current keys (pageId) from Index & Crawl
+                                                                    let delIds = 0
+                                                                    distribution.crawler.store.get(null, (e, crawlerFilesToDelete) => {
+                                                                        crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
+                                                                        crawlerFilesToDelete.forEach((o) => {
+                                                                            distribution.crawler.store.del(o, (e, v) => {
+                                                                                delIds++;
+                                                                                if (e) {
+                                                                                    done(e)
+                                                                                }
+    
+                                                                                if (delIds === crawlerFilesToDelete.length) {
+                                                                                    let remote = { service: 'mem', method: 'del' }
+                                                                                    distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                                        doMapReduce();
+                                                                                    })
+                                                                                }
+                                                                            })
+                                                                        })
+                                                                    })
+                                                                }
+                                                            }
+                                                        })
+                                                    })
+                                                })
+                                            }
+                                        });
+
+                                    })
+                                } catch (e) {
+                                    console.log("here")
+                                    done(e);
+                                }
+                            });
+                        });
+
+                    }
+                });
+            });
+        };
+
+        doMapReduce();
+    });
+})
+
+test('Crawler merged! 2', (done) => {
+    // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/2/', (err) => {
+        if (err) {
+            console.error('Error writing to urls.txt:', err);
+            done(err);
+        } else {
+            console.log('Gutenberg homepage is saved');
+        }
+
+        function checkFileEmpty() {
+            const data = fs.readFileSync(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+            return data;
+            //return fs.readFile(path.join(__dirname, '../testFiles/urls.txt'), 'utf8');
+        }
+
+        let m1 = async (key, value) => {
+            async function get_page(url) {
+                return new Promise((resolve) => {
+                    let data = '';
+                    global.distribution.https.get(url, { rejectUnauthorized: false }, res => {
+                        res.on('data', chunk => { data += chunk; });
+                        res.on('end', () => { resolve(data); });
+                    });
+                });
+            }
+
+            try {
+                if (!value) {
+                    let err = {}
+                    err['Brown'] = value
+                    return err;
+                }
+
+                function extractLinks(html, baseUrl) {
+                    const dom = new global.distribution.jsdom(html);
+                    const links = Array.from(dom.window.document.querySelectorAll('a'))
+
+                        .filter((link) => {
+                            // Skipping links that have no href attribute or that start with '?'
+                            const href = link.href;
+                            if (href === '' || href.startsWith('?')) {
+                                return false;
+                            }
+                            // Skipping the "Parent Directory" link
+                            const text = link.textContent.trim();
+                            if (text === 'Parent Directory'
+                                || text === 'books.txt'
+                                || text === 'donate-howto.txt'
+                                || text === 'indextree.txt'
+                                || text === 'retired/') {
+                                return false;
+                            }
+                            return true;
+                        })
+                        .map((link) => {
+                            const href = link.href;
+                            // Resolve relative URLs to absolute URLs
+                            if (href.startsWith('/')) {
+                                return new URL(href, baseUrl).href;
+                            } else {
+                                return new URL(href, `${baseUrl}`).href;
+                            }
+                        });
+                    return links;
+                }
+
+                const body = await get_page(value);
+
+                //console.log(lowerCaseBody)
+                // Extract URLs from the content
+                const extractedUrls = extractLinks(body, value).filter(url => url !== undefined).join('\n');
+
+                const tempUrlsFilePath = global.distribution.path.join(
+                    global.distribution.testFilesPath,
+                    'tempUrls.txt');
+                if (extractedUrls.length > 0) {
+                    global.distribution.fs.appendFileSync(tempUrlsFilePath, extractedUrls + '\n')
+                }
+
+                function stemWords(text) {
+                    const tokenizer = new global.distribution.natural.WordTokenizer();
+                    const stemmedWords = tokenizer.tokenize(text).map(word => global.distribution.natural.PorterStemmer.stem(word).replace(/[^a-zA-Z0-9]/g, ''));
+                    return stemmedWords;
+                }
+
+                function countWords(words) {
+                    const counts = {};
+
+                    words.forEach(word => {
+                        if (word in counts) {
+                            counts[word] += 1; // Increment the count if the word exists
+                        } else {
+                            counts[word] = 1; // Initialize count if the word is new
+                        }
+                    });
+
+                    const result = Object.keys(counts).map(key => ({
+                        count: counts[key],
+                        word: key
+                    }));
+
+                    result.sort((a, b) => b.count - a.count);
+
+                    const top100 = result.slice(0, 100);
+
+                    return top100;
+                }
+
+                function groupWordsByFirstLetter(wordCounts, url) {
+                    const grouped = {};
+
+                    wordCounts.forEach(item => {
+                        // Extract the first letter of the word
+                        const firstTwoLetters = item.word.slice(0, 2);
+
+                        // Initialize the array if it does not exist
+                        if (!grouped[firstTwoLetters]) {
+                            grouped[firstTwoLetters] = [];
+                        }
+
+                        item['url'] = url;
+
+                        // Push the current item to the appropriate group
+                        grouped[firstTwoLetters].push(item);
+                    });
+
+                    const groupedArray = Object.keys(grouped).map(letter => ({
+                        [letter]: grouped[letter]
+                    }));
+
+                    return groupedArray;
+                }
+
+                const currURL = value;
+                const text = global.distribution.convert(body).toLowerCase()
+                const stemmedWords = stemWords(text)
+                const stopWordsFilePath = global.distribution.path.join(
+                    global.distribution.testFilesPath,
+                    'stopWords.txt');
+                const stopWordsData = global.distribution.fs.readFileSync(stopWordsFilePath, { encoding: 'utf8' });
+                const stopWords = stopWordsData.split('\n').map(word => word.trim());
+                const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
+
+                let wordCounts = countWords(filteredWords);
+                let groupedWords = groupWordsByFirstLetter(wordCounts, currURL)
+                let out = groupedWords;
+
+                console.log('done with: ' + key + ' ' + value + ', node: ' + JSON.stringify(global.nodeConfig))
+                return out;
+            }
+            catch (e) {
+                console.error('Error fetching data for ' + value, e);
+
+                return {}
+            }
+
+
+        };
+
+        let r1 = (key, values) => {
+            function groupWords(words) {
+                const groupedLetters = {};
+
+                words.forEach(wordItem => {
+                    if(wordItem && wordItem['word']) {
+                    const word = wordItem.word;
+
+                    if (!groupedLetters[word]) {
+                        groupedLetters[word] = [];
+                    }
+                    
+
+                    if (Array.isArray(groupedLetters[word])) {
+                        delete wordItem.word;
+                        groupedLetters[word].push(wordItem)
+                    }
+                    
+                }
+                });
+
+                return groupedLetters;
+            }
+
+            let out = {};
+            out[key] = groupWords(values.flat());
+            return out;
+        };
+
+
+        /* Now we do the same thing but on the cluster */
+        const doMapReduce = (cb) => {
+
+            let data = checkFileEmpty().trim()
+            if (iteration > 3 || data === '') {
+                done();
+                return;
+            }
+            iteration++;
+
+            // We send the dataset to the cluster
+            let urlsDataset = ''
+            urlsDataset = data.split('\n');
+            //currentData = data.split('\n');
+
+            let cntr = 0
+            let toDelete = []
+            urlsDataset.forEach((o) => {
+                //console.log(o)
+                uniqueKey += 1
+                toDelete.push(uniqueKey)
+                distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
+                    if (e) {
+                        console.log(e);
+                        done(e);
+                    }
+                    cntr++;
+                    // Once we are done, run the map reduce
+                    if (cntr === urlsDataset.length) {
+                        distribution.crawler.store.get(null, (e, v) => {
+
+                            let filteredKeys = v.filter(element => !isNaN(element));
+
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true }, (e, kvPairs) => {
+                                try {
+                                    // Save the output to urls.txt
+
+                                    let urlsToSave = fs.readFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), { encoding: 'utf8' })
+                                    fs.writeFile(path.join(__dirname, '../testFiles/tempUrls.txt'), '', (err) => {
+                                        fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsToSave, (err) => {
+                                            if (err) {
+                                                console.error('Error writing to urls.txt:', err);
+                                                done(err);
+                                            } else {
+                                                let numPuts = 0;
+                                                let numData = kvPairs.length
+                                                kvPairs.forEach((firstTwoLetterObject) => {
+                                                    let key = Object.keys(firstTwoLetterObject)[0];
+                                                    let newBatch = Object.values(firstTwoLetterObject)[0]
+                                                    let putBatch = newBatch
+                                                    distribution.invertIndex.store.get(key, (e, existingBatch) => {
+                                                        // merge existing Batch
+                                                        if (!e) {
+                                                            function mergeWordBatches(obj1, obj2) {
+                                                                const mergedResult = {};
+    
+                                                                function mergeSort(arr1, arr2) {
+                                                                    const mergedArray = arr1.concat(arr2);
+    
+                                                                    const uniqueMap = new Map();
+    
+                                                                    mergedArray.forEach(item => {
+                                                                        uniqueMap.set(item.url, item);
+                                                                    });
+    
+                                                                    const uniqueArray = Array.from(uniqueMap.values());
+    
+                                                                    uniqueArray.sort((a, b) => b.count - a.count);
+                                                                    return uniqueArray;
+                                                                }
+    
+                                                                const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+    
+                                                                allKeys.forEach(key => {
+                                                                    const arrayFromObj1 = obj1[key] || [];
+                                                                    const arrayFromObj2 = obj2[key] || [];
+                                                                    mergedResult[key] = mergeSort(arrayFromObj1, arrayFromObj2);
+                                                                });
+    
+                                                                return mergedResult;
+                                                            }
+    
+                                                            putBatch = mergeWordBatches(newBatch, existingBatch);
+                                                        }
+    
+                                                        distribution.invertIndex.store.put(putBatch, key, (e, _) => {
+                                                            if (e) {
+                                                                done(e)
+                                                            } else {
+                                                                numPuts++;
+                                                                if (numPuts === numData) {
+                                                                    // All kv pairs have been merged
+                                                                    // delete all current keys (pageId) from Index & Crawl
+                                                                    let delIds = 0
+                                                                    distribution.crawler.store.get(null, (e, crawlerFilesToDelete) => {
+                                                                        crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
+                                                                        crawlerFilesToDelete.forEach((o) => {
+                                                                            distribution.crawler.store.del(o, (e, v) => {
+                                                                                delIds++;
+                                                                                if (e) {
+                                                                                    done(e)
+                                                                                }
+    
+                                                                                if (delIds === crawlerFilesToDelete.length) {
+                                                                                    let remote = { service: 'mem', method: 'del' }
+                                                                                    distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                                        doMapReduce();
+                                                                                    })
+                                                                                }
+                                                                            })
+                                                                        })
+                                                                    })
+                                                                }
+                                                            }
+                                                        })
+                                                    })
+                                                })
+                                            }
+                                        });
+
+                                    })
+                                } catch (e) {
+                                    console.log("here")
+                                    done(e);
+                                }
+                            });
+                        });
+
+                    }
+                });
+            });
+        };
+
+        doMapReduce();
+    });
+})

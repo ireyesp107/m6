@@ -22,6 +22,10 @@ const mr = function(config) {
                 cb(null, {});
                 return;
               }
+              if (v.length === 0) {
+                cb(null, {});
+                return;
+              }
               const numKeys = v.length;
               let tempValues = {};
               v.forEach((localKey) => {
@@ -34,6 +38,9 @@ const mr = function(config) {
                             config.map(localKey, localValue))
                             .then((response) => {
                               tempValues[localKey] = response;
+                              console.log('here')
+                              console.log(numKeys)
+                              console.log(Object.keys(tempValues).length)
                               if (numKeys === Object.keys(tempValues).length) {
                                 global.distribution
                                     .local[config.typeStorage].put(
@@ -41,6 +48,7 @@ const mr = function(config) {
                                         {key: 'tempResults',
                                           gid: context.gid},
                                         (e, v) => {
+                                          console.log(JSON.stringify(global.nodeConfig) + 'done with map')
                                           cb(null, tempValues);
                                         });
                               }
