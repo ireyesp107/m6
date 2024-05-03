@@ -97,48 +97,7 @@ beforeAll((done) => {
                                     const invertIndexConfig = { gid: 'invertIndex', hash: id.consistentHash };
                                     groupsTemplate(invertIndexConfig).put(
                                         invertIndexConfig, invertIndexGroup, (e, v) => {
-                                            const urlExtractConfig = { gid: 'urlExtract' };
-                                            groupsTemplate(urlExtractConfig).put(
-                                                urlExtractConfig, urlExtractGroup, (e, v) => {
-                                                    const invertConfig = { gid: 'invert' };
-                                                    groupsTemplate(invertConfig).put(
-                                                        invertConfig, invertGroup, (e, v) => {
-                                                            const compactTestConfig = { gid: 'compactTest' };
-                                                            groupsTemplate(compactTestConfig).put(
-                                                                compactTestConfig, compactTestGroup,
-                                                                (e, v) => {
-                                                                    const memTestConfig = { gid: 'memTest' };
-                                                                    groupsTemplate(memTestConfig).put(
-                                                                        memTestConfig,
-                                                                        memTestGroup,
-                                                                        (e, v) => {
-                                                                            const outTestConfig =
-                                                                                { gid: 'outTest' };
-                                                                            groupsTemplate(outTestConfig).put(
-                                                                                outTestConfig,
-                                                                                outTestGroup,
-                                                                                (e, v) => {
-                                                                                    const stringMatchConfig =
-                                                                                        { gid: 'stringMatch' };
-                                                                                    groupsTemplate(stringMatchConfig).put(
-                                                                                        stringMatchConfig,
-                                                                                        stringMatchGroup,
-                                                                                        (e, v) => {
-                                                                                            const reverseLinkConfig =
-                                                                                                { gid: 'reverseLink' };
-                                                                                            groupsTemplate(
-                                                                                                reverseLinkConfig).put(
-                                                                                                    reverseLinkConfig,
-                                                                                                    reverseLinkGroup,
-                                                                                                    (e, v) => {
-                                                                                                        done();
-                                                                                                    });
-                                                                                        });
-                                                                                });
-                                                                        });
-                                                                });
-                                                        });
-                                                });
+                                            done();
                                         });
                                 });
                         });
@@ -677,7 +636,7 @@ test('one mr, full crawler and index', (done) => {
                 }
 
                 const body = await get_page(value);
-                
+
                 const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
                 if (extractedUrls.length > 0) {
                     global.distribution.indexData.store.append(extractedUrls, 'tempUrls', (e, v) => { })
@@ -697,7 +656,7 @@ test('one mr, full crawler and index', (done) => {
                         trigrams.push([words[i], words[i + 1], words[i + 2]]);
                     }
                     return trigrams;
-                }       
+                }
 
                 function stemWords(text) {
                     const tokenizer = new global.distribution.natural.WordTokenizer();
