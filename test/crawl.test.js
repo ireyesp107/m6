@@ -677,11 +677,27 @@ test('one mr, full crawler and index', (done) => {
                 }
 
                 const body = await get_page(value);
-                // Extract URLs from the content
+                
                 const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
                 if (extractedUrls.length > 0) {
                     global.distribution.indexData.store.append(extractedUrls, 'tempUrls', (e, v) => { })
                 }
+
+                function makeBigrams(words) {
+                    const bigrams = [];
+                    for (let i = 0; i < words.length - 1; i++) {
+                        bigrams.push([words[i], words[i + 1]]);
+                    }
+                    return bigrams;
+                }
+
+                function makeTrigrams(words) {
+                    const trigrams = [];
+                    for (let i = 0; i < words.length - 2; i++) {
+                        trigrams.push([words[i], words[i + 1], words[i + 2]]);
+                    }
+                    return trigrams;
+                }       
 
                 function stemWords(text) {
                     const tokenizer = new global.distribution.natural.WordTokenizer();
@@ -707,9 +723,7 @@ test('one mr, full crawler and index', (done) => {
 
                     result.sort((a, b) => b.count - a.count);
 
-                    const top100 = result.slice(0, 100);
-
-                    return top100;
+                    return result.slice(0, 100);
                 }
 
                 function groupWordsByFirstLetter(wordCounts, url) {
@@ -744,7 +758,10 @@ test('one mr, full crawler and index', (done) => {
                 const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
 
                 let wordCounts = countWords(filteredWords);
-                let groupedWords = groupWordsByFirstLetter(wordCounts, currURL)
+                let bigramCounts = countWords(makeBigrams(filteredWords))
+                let trigramCounts = countWords(makeTrigrams(filteredWords))
+                let allCounts = wordCounts.concat(bigramCounts, trigramCounts)
+                let groupedWords = groupWordsByFirstLetter(allCounts, currURL)
                 let out = groupedWords;
 
                 return out;
