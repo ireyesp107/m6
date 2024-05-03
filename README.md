@@ -1,4 +1,4 @@
-# M6: GAS
+# M6: GAS (Gutenburg Automated Search)
 > Full name: `Josue Cruz, Isaias Reyes, Nick Masi, Jackson Davis `
 
 
@@ -9,5 +9,5 @@
 ## Time to Complete
 > Roughly, how many hours did this milestone take you to complete?
 
-Hours: `100+ combined (all gorup members`
+Hours: `100+ combined (all group members`
 
