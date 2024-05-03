@@ -375,17 +375,14 @@ test('two seperate mr', (done) => {
                 const grouped = {};
 
                 wordCounts.forEach(item => {
-                    // Extract the first letter of the word
                     const firstTwoLetters = item.word.slice(0, 2);
 
-                    // Initialize the array if it does not exist
                     if (!grouped[firstTwoLetters]) {
                         grouped[firstTwoLetters] = [];
                     }
 
                     item['url'] = url;
 
-                    // Push the current item to the appropriate group
                     grouped[firstTwoLetters].push(item);
                 });
 
@@ -441,7 +438,6 @@ test('two seperate mr', (done) => {
             return out;
         };
 
-        /* Now we do the same thing but on the cluster */
         const doMapReduce = (cb) => {
 
             let data = checkFileEmpty().trim()
