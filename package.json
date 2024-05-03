@@ -19,7 +19,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "express": "^4.19.2",
+    "graceful-fs": "^4.2.11",
     "html-to-text": "^9.0.5",
+    "natural": "^7.0.5",
     "node-fetch": "^2.7.0",
     "yargs": "^17.7.2"
   }
