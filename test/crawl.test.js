@@ -1,4 +1,4 @@
-global.nodeConfig = { ip: '127.0.0.1', port: 7591 };
+global.nodeConfig = { ip: '127.0.0.1', port: 7691 };
 const { Console } = require('console');
 const distribution = require('../distribution');
 const id = distribution.util.id;
@@ -48,8 +48,8 @@ const n4 = { ip: '127.0.0.1', port: 7935 };
 const n5 = { ip: '127.0.0.1', port: 7936 };
 const n6 = { ip: '127.0.0.1', port: 7937 };
 const n7 = { ip: '127.0.0.1', port: 7938 };
-const n8 = { ip: '127.0.0.1', port: 7939 };
-const n9 = { ip: '127.0.0.1', port: 7930 };
+//const n8 = { ip: '127.0.0.1', port: 7949 };
+//const n9 = { ip: '127.0.0.1', port: 7940 };
 // const n10 = { ip: '127.0.0.1', port: 8119 };
 // const n11 = { ip: '127.0.0.1', port: 8120 };
 // const n12 = { ip: '127.0.0.1', port: 8121 };
@@ -1763,7 +1763,7 @@ test('Crawler merged!', (done) => {
 
 test('Crawler merged! 2', (done) => {
     // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
-    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/1/', (err) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/2/2/', (err) => {
         if (err) {
             console.error('Error writing to urls.txt:', err);
             done(err);
@@ -1854,9 +1854,9 @@ test('Crawler merged! 2', (done) => {
 
                     words.forEach(word => {
                         if (word in counts) {
-                            counts[word] += 1; // Increment the count if the word exists
+                            counts[word] += 1;
                         } else {
-                            counts[word] = 1; // Initialize count if the word is new
+                            counts[word] = 1; 
                         }
                     });
 
@@ -1871,22 +1871,34 @@ test('Crawler merged! 2', (done) => {
 
                     return top100;
                 }
+                function makeBigrams(words) {
+                    const bigrams = [];
+                    for (let i = 0; i < words.length - 1; i++) {
+                        bigrams.push([words[i], words[i + 1]]);
+                    }
+                    return bigrams;
+                }
+
+                function makeTrigrams(words) {
+                    const trigrams = [];
+                    for (let i = 0; i < words.length - 2; i++) {
+                        trigrams.push([words[i], words[i + 1], words[i + 2]]);
+                    }
+                    return trigrams;
+                }       
 
                 function groupWordsByFirstLetter(wordCounts, url) {
                     const grouped = {};
 
                     wordCounts.forEach(item => {
-                        // Extract the first letter of the word
                         const firstTwoLetters = item.word.slice(0, 2);
 
-                        // Initialize the array if it does not exist
                         if (!grouped[firstTwoLetters]) {
                             grouped[firstTwoLetters] = [];
                         }
 
                         item['url'] = url;
 
-                        // Push the current item to the appropriate group
                         grouped[firstTwoLetters].push(item);
                     });
 
@@ -1906,9 +1918,12 @@ test('Crawler merged! 2', (done) => {
                 const stopWordsData = global.distribution.fs.readFileSync(stopWordsFilePath, { encoding: 'utf8' });
                 const stopWords = stopWordsData.split('\n').map(word => word.trim());
                 const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
-
+                
                 let wordCounts = countWords(filteredWords);
-                let groupedWords = groupWordsByFirstLetter(wordCounts, currURL)
+                let bigramCounts = countWords(makeBigrams(filteredWords))
+                let trigramCounts = countWords(makeTrigrams(filteredWords))
+                let allCounts = wordCounts.concat(bigramCounts, trigramCounts)
+                let groupedWords = groupWordsByFirstLetter(allCounts, currURL)
                 let out = groupedWords;
 
                 console.log('done with: ' + key + ' ' + value + ', node: ' + JSON.stringify(global.nodeConfig))
@@ -1954,10 +1969,12 @@ test('Crawler merged! 2', (done) => {
 
 
         /* Now we do the same thing but on the cluster */
+        let numBooks = 0;
         const doMapReduce = (cb) => {
 
             let data = checkFileEmpty().trim()
             if (iteration > 3 || data === '') {
+                console.log(numBooks)
                 done();
                 return;
             }
@@ -1973,6 +1990,10 @@ test('Crawler merged! 2', (done) => {
             urlsDataset.forEach((o) => {
                 //console.log(o)
                 uniqueKey += 1
+                if (o.endsWith('.txt')) {
+                    numBooks +=1
+                }
+                
                 toDelete.push(uniqueKey)
                 distribution.crawler.store.put(o, uniqueKey.toString(), (e, v) => {
                     if (e) {
@@ -2094,8 +2115,6 @@ test('Crawler merged! 2', (done) => {
 
 test('query', (done) => {
     function findInBatch(queryWord, batch) {
-        console.log("CHAY")
-        console.log(queryWord)
         if (batch[queryWord]) {
             return batch[queryWord]
         } else {
@@ -2105,12 +2124,14 @@ test('query', (done) => {
 
     let query = "project"
     let queryBatch = query.slice(0,2)
-
+    let startTime = performance.now();
     distribution.invertIndex.store.get(queryBatch, (e,v) => {
-        console.log(v)
+        let endTime = performance.now();
+        console.log(endTime - startTime)
+        //console.log(v)
         expect(e).toBeFalsy();
         let result = findInBatch(query, v)
-        console.log(result)
+        //console.log(result)
 
         expect(Array.isArray(result)).toBe(true);
         done();

@@ -1,1 +1,10 @@
-https://atlas.cs.brown.edu/data/gutenberg/1/1/1/9/11191/old/11191-2006-10-30.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/3/11938/old/11938-8.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/3/11938/old/11938.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/3/11938/old/20090116.11938-8.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/3/11938/old/20090116.11938.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/8/11983/old/11983-8.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/8/11983/old/11983.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/1/11913/old/11913-8.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/1/11913/old/11913.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/4/11945/old/11945-8.txt
+https://atlas.cs.brown.edu/data/gutenberg/1/1/9/4/11945/old/11945.txt
