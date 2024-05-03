@@ -140,15 +140,15 @@ beforeAll((done) => {
                                     //                     distribution.local.status.spawn(n12, (e, v) => {
                                     cb();
                                     //                     });
-                            //     });
-                            // });
+                                    //     });
+                                    // });
+                                });
+                            });
                         });
                     });
                 });
             });
         });
-                     });
-                });
         //     });
         // });
     };
@@ -160,7 +160,7 @@ beforeAll((done) => {
         startNodes(() => {
             groupsTemplate(crawlerConfig).put(
                 crawlerConfig, crawlerGroup, (e, v) => {
-                    const indexConfig = { gid: 'index'};
+                    const indexConfig = { gid: 'index' };
                     groupsTemplate(indexConfig).put(
                         indexConfig, indexGroup, (e, v) => {
                     const indexDataConfig = { gid: 'indexData', hash: id.consistentHash };
@@ -235,10 +235,10 @@ afterAll((done) => {
                         distribution.local.comm.send([], remote, (e, v) => {
                             remote.node = n7;
                             distribution.local.comm.send([], remote, (e, v) => {
-                                        //  remote.node = n8;
-                                        //  distribution.local.comm.send([], remote, (e, v) => {
-                                        //      remote.node = n9;
-                                        //      distribution.local.comm.send([], remote, (e, v) => {
+                                //  remote.node = n8;
+                                //  distribution.local.comm.send([], remote, (e, v) => {
+                                //      remote.node = n9;
+                                //      distribution.local.comm.send([], remote, (e, v) => {
                                 //                  remote.node = n10;
                                 //                  distribution.local.comm.send([], remote, (e, v) => {
                                 //                      remote.node = n11;
@@ -257,8 +257,8 @@ afterAll((done) => {
         });
     });
 });
-    //      });
-    //  });
+//      });
+//  });
 //  });
 // });
 
@@ -770,7 +770,7 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
                 const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
 
                 let out = {};
-                out['Brown'] = extractedUrls ;
+                out['Brown'] = extractedUrls;
                 //console.log(out);
 
                 // let extractedUrls = extractLinks(body, value);
@@ -820,15 +820,15 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
             //let roundCntr = 0;
 
             // split into subsets
-            
-            
-            function subGroupExtraction(dataGroup){
-                let subDataGroup = dataGroup.slice(0,500)
+
+
+            function subGroupExtraction(dataGroup) {
+                let subDataGroup = dataGroup.slice(0, 500)
                 let restDataGroup = dataGroup.slice(500)
                 let toDelete = []
                 let cntr = 0
                 //base case
-                if (subDataGroup.length < 250){
+                if (subDataGroup.length < 250) {
                     subDataGroup.forEach((o) => {
                         //console.log(o)
                         uniqueKey += 1
@@ -844,86 +844,86 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
                             // at the 100th url
                             if (cntr === subDataGroup.length) {
 
-                             distribution.crawler.store.get(null, (e, v) => {
+                                distribution.crawler.store.get(null, (e, v) => {
 
-                                let filteredKeys = v.filter(element => !isNaN(element));
-    
-                                distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1}, (e, v) => {
-                                    try {
-                                        console.log(v)
-    
-                                        // Save the output to urls.txt
-                                        const urlsToSave = v.flatMap((item) => {
-                                            const key = Object.keys(item)[0];
-                                            return item[key];
-                                        });
-    
-                                        const urlsString = urlsToSave.join('\n');
-    
-                                        fs.appendFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), urlsString)
+                                    let filteredKeys = v.filter(element => !isNaN(element));
+
+                                    distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
+                                        try {
+                                            console.log(v)
+
+                                            // Save the output to urls.txt
+                                            const urlsToSave = v.flatMap((item) => {
+                                                const key = Object.keys(item)[0];
+                                                return item[key];
+                                            });
+
+                                            const urlsString = urlsToSave.join('\n');
+
+                                            fs.appendFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), urlsString)
 
                                             //const data = 
                                             fs.readFile(path.join(__dirname, '../testFiles/tempUrls.txt'), 'utf8', (err, data) => {
 
-                                            if (err) {
-                                                console.error('Error writing to urls.txt:', err);
-                                                done(err);
-                                            } else {
-                                                // let urlData = data
-                                                // urlData = urlData.trim().split('\n'); 
-                                                // console.log(urlData)
+                                                if (err) {
+                                                    console.error('Error writing to urls.txt:', err);
+                                                    done(err);
+                                                } else {
+                                                    // let urlData = data
+                                                    // urlData = urlData.trim().split('\n'); 
+                                                    // console.log(urlData)
 
-                                                fs.writeFile(path.join(__dirname, '../testFiles/tempUrls.txt'), '', (err) => {
+                                                    fs.writeFile(path.join(__dirname, '../testFiles/tempUrls.txt'), '', (err) => {
 
-                                                fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), data, (err) => {
-                                                console.log('URLs saved to urls.txt');
-                                                //index phase 1
-    
-                                                //index phase 2
-    
-                                                let delCntr = 0
-                                                distribution.crawler.store.get(null, (e, filesToDelete) => {
-    
-                                                    filesToDelete = filesToDelete.filter(key => key !== 'tempResults')
-                                                    filesToDelete.forEach((o) => {
-                                                        distribution.crawler.store.del(o, (e, v) => {
-                                                            delCntr++;
-                                                            if (e) {
-                                                                console.log(o)
-                                                                console.log(e)
-                                                            }
-    
-                                                            //delCntr++;
-                                                            if (delCntr === filesToDelete.length) {
-                                                                let remote = { service: 'store', method: 'del' }
-                                                                distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
-                                                                    doMapReduce()
+                                                        fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), data, (err) => {
+                                                            console.log('URLs saved to urls.txt');
+                                                            //index phase 1
+
+                                                            //index phase 2
+
+                                                            let delCntr = 0
+                                                            distribution.crawler.store.get(null, (e, filesToDelete) => {
+
+                                                                filesToDelete = filesToDelete.filter(key => key !== 'tempResults')
+                                                                filesToDelete.forEach((o) => {
+                                                                    distribution.crawler.store.del(o, (e, v) => {
+                                                                        delCntr++;
+                                                                        if (e) {
+                                                                            console.log(o)
+                                                                            console.log(e)
+                                                                        }
+
+                                                                        //delCntr++;
+                                                                        if (delCntr === filesToDelete.length) {
+                                                                            let remote = { service: 'store', method: 'del' }
+                                                                            distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                                doMapReduce()
+                                                                            })
+                                                                        }
+                                                                    })
                                                                 })
-                                                            }
-                                                        })
-                                                    })
-                                                })
-                                            //})
-                                            
-                                            });
-                                        });
+                                                            })
+                                                            //})
 
-                                            }
-                                        //});
-                                        });
-                                    } catch (e) {
-                                        console.log("here")
-                                        done(e);
-                                    }
+                                                        });
+                                                    });
+
+                                                }
+                                                //});
+                                            });
+                                        } catch (e) {
+                                            console.log("here")
+                                            done(e);
+                                        }
+                                    });
+                                    //}
                                 });
-                                //}
-                            });
-                        }
+                            }
+                        })
                     })
-                })
                     //}
                 }
-                else{
+                else {
                     subDataGroup.forEach((o) => {
                         //console.log(o)
                         uniqueKey += 1
@@ -938,34 +938,34 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
                             // Once we are done, run the map reduce
                             // at the 100th url
                             if (cntr === subDataGroup.length) {
-                            distribution.crawler.store.get(null, (e, v) => {
+                                distribution.crawler.store.get(null, (e, v) => {
 
-                                let filteredKeys = v.filter(element => !isNaN(element));
-    
-                                distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
-                                    try {
-                                       
-                                        console.log(v)
-                                        console.log(cntr)
-    
-                                        // Save the output to urls.txt
-                                        const urlsToSave = v.flatMap((item) => {
-                                            const key = Object.keys(item)[0];
-                                            return item[key];
-                                        });
-    
-                                        const urlsString = urlsToSave.join('\n');
-    
-                                        fs.appendFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), urlsString)//, (err) => {
+                                    let filteredKeys = v.filter(element => !isNaN(element));
+
+                                    distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1 }, (e, v) => {
+                                        try {
+
+                                            console.log(v)
+                                            console.log(cntr)
+
+                                            // Save the output to urls.txt
+                                            const urlsToSave = v.flatMap((item) => {
+                                                const key = Object.keys(item)[0];
+                                                return item[key];
+                                            });
+
+                                            const urlsString = urlsToSave.join('\n');
+
+                                            fs.appendFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), urlsString)//, (err) => {
                                             if (err) {
                                                 console.error('Error writing to urls.txt:', err);
                                                 done(err);
                                             } else {
                                                 console.log('URLs saved to tempUrls.txt');
                                                 //index phase 1
-    
+
                                                 //index phase 2
-    
+
                                                 let delCntr = 0
                                                 distribution.crawler.store.get(null, (e, filesToDelete) => {
                                                     filesToDelete = filesToDelete.filter(key => key !== 'tempResults')
@@ -986,24 +986,24 @@ test('all.mr:crawler-homepage-urltxt-multiple rounds NOT USING FOR INTEGRATION',
                                                         })
                                                     })
                                                 })
-    
-                                            }
-                                        //});
-                                    } catch (e) {
-                                        console.log("here")
-                                        done(e);
-                                    }
-                                });
-                                //}
-                            });
-                        }
-                    });
-                });
 
-                        }
-                    }
-                subGroupExtraction(urlsDataset)
-            };
+                                            }
+                                            //});
+                                        } catch (e) {
+                                            console.log("here")
+                                            done(e);
+                                        }
+                                    });
+                                    //}
+                                });
+                            }
+                        });
+                    });
+
+                }
+            }
+            subGroupExtraction(urlsDataset)
+        };
 
         doMapReduce();
 
@@ -1112,7 +1112,7 @@ test('Crawler we are going to use', (done) => {
                 global.distribution.index.store.put([stringBody, value], key, (e, v) => { });
 
                 let out = {};
-                out['Brown'] = extractedUrls ;
+                out['Brown'] = extractedUrls;
                 //console.log(out);
 
                 // let extractedUrls = extractLinks(body, value);
@@ -1123,15 +1123,15 @@ test('Crawler we are going to use', (done) => {
 
                 //global.distribution.crawler.store.put(out[value], value, (e, v) => { });
                 return out;
-                
-            } 
-        catch (e) {
+
+            }
+            catch (e) {
                 console.error('Error fetching data for ' + value, e);
 
                 return {}
             }
-            
-        
+
+
         };
 
         let r1 = (key, values) => {
@@ -1146,9 +1146,9 @@ test('Crawler we are going to use', (done) => {
             out[key] = values.flat();
             return out;
         };
-        
 
-        let mIndex = async (key, value) => {   
+
+        let mIndex = async (key, value) => {
             // async function get_URL() {
             //     return new Promise((resolve) => {
             //         global.distribution.crawler.store.get(key, (e,v) => {
@@ -1166,10 +1166,10 @@ test('Crawler we are going to use', (done) => {
                 const stemmedWords = tokenizer.tokenize(text).map(word => global.distribution.natural.PorterStemmer.stem(word).replace(/[^a-zA-Z0-9]/g, ''));
                 return stemmedWords;
             }
-            
+
             function countWords(words) {
                 const counts = {};
-    
+
                 words.forEach(word => {
                     if (word in counts) {
                         counts[word] += 1; // Increment the count if the word exists
@@ -1177,42 +1177,42 @@ test('Crawler we are going to use', (done) => {
                         counts[word] = 1; // Initialize count if the word is new
                     }
                 });
-    
+
                 const result = Object.keys(counts).map(key => ({
                     count: counts[key],
                     word: key
                 }));
-    
+
                 return result;
             }
-    
+
             function groupWordsByFirstLetter(wordCounts, url) {
                 const grouped = {};
-    
+
                 wordCounts.forEach(item => {
                     // Extract the first letter of the word
                     const firstTwoLetters = item.word.slice(0, 2);
-    
+
                     // Initialize the array if it does not exist
                     if (!grouped[firstTwoLetters]) {
                         grouped[firstTwoLetters] = [];
                     }
-    
+
                     item['url'] = url;
-                    
+
                     // Push the current item to the appropriate group
                     grouped[firstTwoLetters].push(item);
                 });
-    
+
                 const groupedArray = Object.keys(grouped).map(letter => ({
                     [letter]: grouped[letter]
                 }));
-    
+
                 return groupedArray;
             }
-    
+
             const currURL = value[1];
-            
+
             const text = global.distribution.convert(value[0]).toLowerCase()
             const stemmedWords = stemWords(text)
             const stopWordsFilePath = global.distribution.path.join(
@@ -1221,35 +1221,35 @@ test('Crawler we are going to use', (done) => {
             const stopWordsData = global.distribution.fs.readFileSync(stopWordsFilePath, { encoding: 'utf8' });
             const stopWords = stopWordsData.split('\n').map(word => word.trim());
             const filteredWords = stemmedWords.filter(word => !stopWords.includes(word) && isNaN(word));
-    
+
             let wordCounts = countWords(filteredWords);
             let groupedWords = groupWordsByFirstLetter(wordCounts, currURL)
             let out = groupedWords;
-    
+
             return out;
         };
-    
+
         let rIndex = (key, values) => {
             // group all words in subset of the first two letters
             function groupWords(words) {
                 const groupedLetters = {};
-    
+
                 words.forEach(wordItem => {
                     const word = wordItem.word;
-    
+
                     if (!groupedLetters[word]) {
                         groupedLetters[word] = [];
                     }
-    
+
                     if (Array.isArray(groupedLetters[word])) {
                         groupedLetters[word].push(wordItem)
                     }
                 });
-    
+
                 return groupedLetters;
             }
-    
-    
+
+
             let out = {};
             //group values by words
             out[key] = groupWords(values.flat());
@@ -1274,7 +1274,7 @@ test('Crawler we are going to use', (done) => {
             let cntr = 0
             let toDelete = []
             // append sync
-            fs.appendFileSync(path.join(__dirname, '../testFiles/seenUrls.txt'), data +'\n')
+            fs.appendFileSync(path.join(__dirname, '../testFiles/seenUrls.txt'), data + '\n')
 
             urlsDataset.forEach((o) => {
                 //console.log(o)
@@ -1292,14 +1292,14 @@ test('Crawler we are going to use', (done) => {
 
                             let filteredKeys = v.filter(element => !isNaN(element));
 
-                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true}, (e, v) => {
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory: true }, (e, v) => {
                                 try {
                                     console.log(v)
-                                    const seenUrlData = fs.readFileSync(path.join(__dirname, '../testFiles/seenUrls.txt'), {encoding: 'utf8'});
+                                    const seenUrlData = fs.readFileSync(path.join(__dirname, '../testFiles/seenUrls.txt'), { encoding: 'utf8' });
                                     let seenUrls = ''
                                     seenUrls = new Set(seenUrlData.split('\n'));
                                     // Save the output to urls.txt
-                                
+
                                     const urlsToSave = v.flatMap((item) => {
                                         const key = Object.keys(item)[0];
                                         return item[key];
@@ -1318,7 +1318,7 @@ test('Crawler we are going to use', (done) => {
                                             // Key is pageId, value is page content
 
                                             // Run Index MapReduce
-                                            distribution.index.mr.exec({keys: filteredKeys, map: mIndex, reduce: rIndex, memory: true}, (_,v) => {
+                                            distribution.index.mr.exec({ keys: filteredKeys, map: mIndex, reduce: rIndex, memory: true }, (_, v) => {
                                                 try {
                                                     // merge these kv pairs into disitrubted store
                                                     let numPuts = 0;
@@ -1372,40 +1372,40 @@ test('Crawler we are going to use', (done) => {
                                                                         // delete all current keys (pageId) from Index & Crawl
                                                                         let delIds = 0
                                                                         distribution.crawler.store.get(null, (e, crawlerFilesToDelete) => {
-                                                                                crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
-                                                                                crawlerFilesToDelete.forEach((o) => {
-                                                                                    distribution.crawler.store.del(o, (e, v) => {
-                                                                                        delIds++;
-                                                                                        if (e) {
-                                                                                            done(e)
-                                                                                        }
-                                                                                        
-                                                                                        if (delIds === crawlerFilesToDelete.length) {
-                                                                                            delIds = 0
-                                                                                            distribution.index.store.get(null, (e, indexFilesToDelete) => {
-                                                                                                indexFilesToDelete = indexFilesToDelete.filter(key => key !== 'tempResults')
-                                                                                                indexFilesToDelete.forEach((o) => {
-                                                                                                    distribution.index.store.del(o, (e, v) => {
-                                                                                                        delIds++;
-                                                                                                        if (e) {
-                                                                                                            done(e)
-                                                                                                        }
-                
-                                                                                                        if (delIds === indexFilesToDelete.length) {
+                                                                            crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
+                                                                            crawlerFilesToDelete.forEach((o) => {
+                                                                                distribution.crawler.store.del(o, (e, v) => {
+                                                                                    delIds++;
+                                                                                    if (e) {
+                                                                                        done(e)
+                                                                                    }
+
+                                                                                    if (delIds === crawlerFilesToDelete.length) {
+                                                                                        delIds = 0
+                                                                                        distribution.index.store.get(null, (e, indexFilesToDelete) => {
+                                                                                            indexFilesToDelete = indexFilesToDelete.filter(key => key !== 'tempResults')
+                                                                                            indexFilesToDelete.forEach((o) => {
+                                                                                                distribution.index.store.del(o, (e, v) => {
+                                                                                                    delIds++;
+                                                                                                    if (e) {
+                                                                                                        done(e)
+                                                                                                    }
+
+                                                                                                    if (delIds === indexFilesToDelete.length) {
+                                                                                                        let remote = { service: 'mem', method: 'del' }
+                                                                                                        distribution.crawler.comm.send([{ key: 'tempResults', gid: 'index' }], remote, (e, v) => {
                                                                                                             let remote = { service: 'mem', method: 'del' }
-                                                                                                            distribution.crawler.comm.send([{ key: 'tempResults', gid: 'index' }], remote, (e,v) => {
-                                                                                                                let remote = { service: 'mem', method: 'del' }
-                                                                                                                distribution.index.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
-                                                                                                                    doMapReduce();
-                                                                                                                })
+                                                                                                            distribution.index.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                                                                doMapReduce();
                                                                                                             })
-                                                                                                        }
-                                                                                                    })
+                                                                                                        })
+                                                                                                    }
                                                                                                 })
                                                                                             })
-                                                                                        }
-                                                                                    })
+                                                                                        })
+                                                                                    }
                                                                                 })
+                                                                            })
                                                                         })
                                                                     }
                                                                 }
@@ -1599,20 +1599,20 @@ test('Crawler merged!', (done) => {
                 const groupedLetters = {};
 
                 words.forEach(wordItem => {
-                    if(wordItem && wordItem['word']) {
-                    const word = wordItem.word;
+                    if (wordItem && wordItem['word']) {
+                        const word = wordItem.word;
 
-                    if (!groupedLetters[word]) {
-                        groupedLetters[word] = [];
-                    }
-                    
+                        if (!groupedLetters[word]) {
+                            groupedLetters[word] = [];
+                        }
 
-                    if (Array.isArray(groupedLetters[word])) {
-                        delete wordItem.word;
-                        groupedLetters[word].push(wordItem)
+
+                        if (Array.isArray(groupedLetters[word])) {
+                            delete wordItem.word;
+                            groupedLetters[word].push(wordItem)
+                        }
+
                     }
-                    
-                }
                 });
 
                 return groupedLetters;
@@ -1657,7 +1657,7 @@ test('Crawler merged!', (done) => {
 
                             let filteredKeys = v.filter(element => !isNaN(element));
 
-                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true }, (e, kvPairs) => {
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory: true }, (e, kvPairs) => {
                                 try {
                                     // Save the output to urls.txt
 
@@ -1679,12 +1679,12 @@ test('Crawler merged!', (done) => {
                                                         if (!e) {
                                                             function mergeWordBatches(obj1, obj2) {
                                                                 const mergedResult = {};
-    
+
                                                                 function mergeSort(arr1, arr2) {
                                                                     const mergedArray = arr1.concat(arr2);
-    
+
                                                                     const uniqueMap = new Map();
-    
+
                                                                     mergedArray.forEach(item => {
                                                                         uniqueMap.set(item.url, item);
                                                                     });
@@ -1694,21 +1694,21 @@ test('Crawler merged!', (done) => {
                                                                     uniqueArray = uniqueArray.sort((a, b) => b.count - a.count).slice(0,10);
                                                                     return uniqueArray;
                                                                 }
-    
+
                                                                 const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
-    
+
                                                                 allKeys.forEach(key => {
                                                                     const arrayFromObj1 = obj1[key] || [];
                                                                     const arrayFromObj2 = obj2[key] || [];
                                                                     mergedResult[key] = mergeSort(arrayFromObj1, arrayFromObj2);
                                                                 });
-    
+
                                                                 return mergedResult;
                                                             }
-    
+
                                                             putBatch = mergeWordBatches(newBatch, existingBatch);
                                                         }
-    
+
                                                         distribution.invertIndex.store.put(putBatch, key, (e, _) => {
                                                             if (e) {
                                                                 done(e)
@@ -1726,7 +1726,7 @@ test('Crawler merged!', (done) => {
                                                                                 if (e) {
                                                                                     done(e)
                                                                                 }
-    
+
                                                                                 if (delIds === crawlerFilesToDelete.length) {
                                                                                     let remote = { service: 'mem', method: 'del' }
                                                                                     distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
@@ -1791,6 +1791,11 @@ test('Crawler merged! 2', (done) => {
             function append_urls(urls) {
                     global.distribution.indexData.store.append(urls, 'tempUrls', (e,v) => {
                     });
+            }
+
+            function append_urls(urls) {
+                global.distribution.indexData.store.append(urls, 'tempUrls', (e, v) => {
+                });
             }
 
             try {
@@ -1928,20 +1933,20 @@ test('Crawler merged! 2', (done) => {
                 const groupedLetters = {};
 
                 words.forEach(wordItem => {
-                    if(wordItem && wordItem['word']) {
-                    const word = wordItem.word;
+                    if (wordItem && wordItem['word']) {
+                        const word = wordItem.word;
 
-                    if (!groupedLetters[word]) {
-                        groupedLetters[word] = [];
-                    }
-                    
+                        if (!groupedLetters[word]) {
+                            groupedLetters[word] = [];
+                        }
 
-                    if (Array.isArray(groupedLetters[word])) {
-                        delete wordItem.word;
-                        groupedLetters[word].push(wordItem)
+
+                        if (Array.isArray(groupedLetters[word])) {
+                            delete wordItem.word;
+                            groupedLetters[word].push(wordItem)
+                        }
+
                     }
-                    
-                }
                 });
 
                 return groupedLetters;
@@ -1986,7 +1991,7 @@ test('Crawler merged! 2', (done) => {
 
                             let filteredKeys = v.filter(element => !isNaN(element));
 
-                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true }, (e, kvPairs) => {
+                            distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory: true }, (e, kvPairs) => {
                                 try {
                                     // Save the output to urls.txt
                                     distribution.indexData.store.get('tempUrls', (e,v) => {
