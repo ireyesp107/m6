@@ -1,4 +1,4 @@
-global.nodeConfig = { ip: '127.0.0.1', port: 7491 };
+global.nodeConfig = { ip: '127.0.0.1', port: 7591 };
 const { Console } = require('console');
 const distribution = require('../distribution');
 const id = distribution.util.id;
@@ -163,7 +163,7 @@ beforeAll((done) => {
                     const indexConfig = { gid: 'index'};
                     groupsTemplate(indexConfig).put(
                         indexConfig, indexGroup, (e, v) => {
-                    const indexDataConfig = { gid: 'indexData' };
+                    const indexDataConfig = { gid: 'indexData', hash: id.consistentHash };
                     groupsTemplate(indexDataConfig).put(
                         indexDataConfig, indexDataGroup, (e, v) => {
                     const invertIndexConfig = { gid: 'invertIndex', hash: id.consistentHash };
@@ -264,6 +264,7 @@ afterAll((done) => {
 
 test('all.mr:crawler!', (done) => {
     let m1 = async (key, value) => {
+
         const response = await global.fetch(value);
         const body = await response.text();
 
@@ -1762,7 +1763,7 @@ test('Crawler merged!', (done) => {
 
 test('Crawler merged! 2', (done) => {
     // distribution.crawler.mem.put('https://atlas.cs.brown.edu/data/gutenberg/', "urls")
-    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/5/', (err) => {
+    fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), 'https://atlas.cs.brown.edu/data/gutenberg/1/1/1/', (err) => {
         if (err) {
             console.error('Error writing to urls.txt:', err);
             done(err);
@@ -1785,6 +1786,11 @@ test('Crawler merged! 2', (done) => {
                         res.on('end', () => { resolve(data); });
                     });
                 });
+            }
+
+            function append_urls(urls) {
+                    global.distribution.indexData.store.append(urls, 'tempUrls', (e,v) => {
+                    });
             }
 
             try {
@@ -1831,13 +1837,10 @@ test('Crawler merged! 2', (done) => {
 
                 //console.log(lowerCaseBody)
                 // Extract URLs from the content
-                const extractedUrls = extractLinks(body, value).filter(url => url !== undefined).join('\n');
+                const extractedUrls = extractLinks(body, value).filter(url => url !== undefined);
 
-                const tempUrlsFilePath = global.distribution.path.join(
-                    global.distribution.testFilesPath,
-                    'tempUrls.txt');
                 if (extractedUrls.length > 0) {
-                    global.distribution.fs.appendFileSync(tempUrlsFilePath, extractedUrls + '\n')
+                    append_urls(extractedUrls)
                 }
 
                 function stemWords(text) {
@@ -1986,90 +1989,91 @@ test('Crawler merged! 2', (done) => {
                             distribution.crawler.mr.exec({ keys: filteredKeys, map: m1, reduce: r1, iterations: 1, memory:true }, (e, kvPairs) => {
                                 try {
                                     // Save the output to urls.txt
-
-                                    let urlsToSave = fs.readFileSync(path.join(__dirname, '../testFiles/tempUrls.txt'), { encoding: 'utf8' })
-                                    fs.writeFile(path.join(__dirname, '../testFiles/tempUrls.txt'), '', (err) => {
-                                        fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsToSave, (err) => {
-                                            if (err) {
-                                                console.error('Error writing to urls.txt:', err);
-                                                done(err);
-                                            } else {
-                                                let numPuts = 0;
-                                                let numData = kvPairs.length
-                                                kvPairs.forEach((firstTwoLetterObject) => {
-                                                    let key = Object.keys(firstTwoLetterObject)[0];
-                                                    let newBatch = Object.values(firstTwoLetterObject)[0]
-                                                    let putBatch = newBatch
-                                                    distribution.invertIndex.store.get(key, (e, existingBatch) => {
-                                                        // merge existing Batch
-                                                        if (!e) {
-                                                            function mergeWordBatches(obj1, obj2) {
-                                                                const mergedResult = {};
-    
-                                                                function mergeSort(arr1, arr2) {
-                                                                    const mergedArray = arr1.concat(arr2);
-    
-                                                                    const uniqueMap = new Map();
-    
-                                                                    mergedArray.forEach(item => {
-                                                                        uniqueMap.set(item.url, item);
+                                    distribution.indexData.store.get('tempUrls', (e,v) => {
+                                        const urlsToSave = v.join('\n')
+                                        distribution.indexData.store.del('tempUrls', (e,v) => {
+                                            fs.writeFile(path.join(__dirname, '../testFiles/urls.txt'), urlsToSave, (err) => {
+                                                if (err) {
+                                                    console.error('Error writing to urls.txt:', err);
+                                                    done(err);
+                                                } else {
+                                                    let numPuts = 0;
+                                                    let numData = kvPairs.length
+                                                    kvPairs.forEach((firstTwoLetterObject) => {
+                                                        let key = Object.keys(firstTwoLetterObject)[0];
+                                                        let newBatch = Object.values(firstTwoLetterObject)[0]
+                                                        let putBatch = newBatch
+                                                        distribution.invertIndex.store.get(key, (e, existingBatch) => {
+                                                            // merge existing Batch
+                                                            if (!e) {
+                                                                function mergeWordBatches(obj1, obj2) {
+                                                                    const mergedResult = {};
+        
+                                                                    function mergeSort(arr1, arr2) {
+                                                                        const mergedArray = arr1.concat(arr2);
+        
+                                                                        const uniqueMap = new Map();
+        
+                                                                        mergedArray.forEach(item => {
+                                                                            uniqueMap.set(item.url, item);
+                                                                        });
+        
+                                                                        let uniqueArray = Array.from(uniqueMap.values());
+        
+                                                                        uniqueArray = uniqueArray.sort((a, b) => b.count - a.count).slice(0,10);
+                                                                        return uniqueArray;
+                                                                    }
+        
+                                                                    const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+        
+                                                                    allKeys.forEach(key => {
+                                                                        const arrayFromObj1 = obj1[key] || [];
+                                                                        const arrayFromObj2 = obj2[key] || [];
+                                                                        mergedResult[key] = mergeSort(arrayFromObj1, arrayFromObj2);
                                                                     });
-    
-                                                                    let uniqueArray = Array.from(uniqueMap.values());
-    
-                                                                    uniqueArray = uniqueArray.sort((a, b) => b.count - a.count).slice(0,10);
-                                                                    return uniqueArray;
+        
+                                                                    return mergedResult;
                                                                 }
-    
-                                                                const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
-    
-                                                                allKeys.forEach(key => {
-                                                                    const arrayFromObj1 = obj1[key] || [];
-                                                                    const arrayFromObj2 = obj2[key] || [];
-                                                                    mergedResult[key] = mergeSort(arrayFromObj1, arrayFromObj2);
-                                                                });
-    
-                                                                return mergedResult;
+        
+                                                                putBatch = mergeWordBatches(newBatch, existingBatch);
                                                             }
-    
-                                                            putBatch = mergeWordBatches(newBatch, existingBatch);
-                                                        }
-    
-                                                        distribution.invertIndex.store.put(putBatch, key, (e, _) => {
-                                                            if (e) {
-                                                                done(e)
-                                                            } else {
-                                                                numPuts++;
-                                                                if (numPuts === numData) {
-                                                                    // All kv pairs have been merged
-                                                                    // delete all current keys (pageId) from Index & Crawl
-                                                                    let delIds = 0
-                                                                    distribution.crawler.store.get(null, (e, crawlerFilesToDelete) => {
-                                                                        crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
-                                                                        crawlerFilesToDelete.forEach((o) => {
-                                                                            distribution.crawler.store.del(o, (e, v) => {
-                                                                                delIds++;
-                                                                                if (e) {
-                                                                                    done(e)
-                                                                                }
-    
-                                                                                if (delIds === crawlerFilesToDelete.length) {
-                                                                                    let remote = { service: 'mem', method: 'del' }
-                                                                                    distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
-                                                                                        doMapReduce();
-                                                                                    })
-                                                                                }
+        
+                                                            distribution.invertIndex.store.put(putBatch, key, (e, _) => {
+                                                                if (e) {
+                                                                    done(e)
+                                                                } else {
+                                                                    numPuts++;
+                                                                    if (numPuts === numData) {
+                                                                        // All kv pairs have been merged
+                                                                        // delete all current keys (pageId) from Index & Crawl
+                                                                        let delIds = 0
+                                                                        distribution.crawler.store.get(null, (e, crawlerFilesToDelete) => {
+                                                                            crawlerFilesToDelete = crawlerFilesToDelete.filter(key => key !== 'tempResults')
+                                                                            crawlerFilesToDelete.forEach((o) => {
+                                                                                distribution.crawler.store.del(o, (e, v) => {
+                                                                                    delIds++;
+                                                                                    if (e) {
+                                                                                        done(e)
+                                                                                    }
+        
+                                                                                    if (delIds === crawlerFilesToDelete.length) {
+                                                                                        let remote = { service: 'mem', method: 'del' }
+                                                                                        distribution.crawler.comm.send([{ key: 'tempResults', gid: 'crawler' }], remote, (e, v) => {
+                                                                                            doMapReduce();
+                                                                                        })
+                                                                                    }
+                                                                                })
                                                                             })
                                                                         })
-                                                                    })
+                                                                    }
                                                                 }
-                                                            }
+                                                            })
                                                         })
                                                     })
-                                                })
-                                            }
-                                        });
+                                                }
+                                            });
 
+                                        })
                                     })
                                 } catch (e) {
                                     console.log("here")
